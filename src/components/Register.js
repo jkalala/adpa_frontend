@@ -1,15 +1,127 @@
 import React, { useState } from 'react';
 import { Container, Form, Button, Alert, Card, Row, Col, Spinner } from 'react-bootstrap';
 import axios from 'axios';
-import { FiMail, FiUser, FiBriefcase, FiFileText } from 'react-icons/fi';
+import { FiMail, FiUser, FiBriefcase, FiFileText, FiArrowRight } from 'react-icons/fi';
 import styled from 'styled-components';
+
+// Styled components
+const RequestAccessContainer = styled(Container)`
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+`;
 
 const RequestAccessCard = styled(Card)`
   border: none;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  max-width: 600px;
+  box-shadow: 0 15px 30px rgba(26, 26, 46, 0.1);
+  max-width: 700px;
   margin: 0 auto;
+  overflow: hidden;
+  border-top: 4px solid #1a1a2e;
+`;
+
+const FormHeader = styled.div`
+  text-align: center;
+  padding: 2rem;
+  background-color: #1a1a2e;
+  color: white;
+  
+  h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0;
+  }
+`;
+
+const FormBody = styled.div`
+  padding: 2rem;
+`;
+
+const StyledFormControl = styled(Form.Control)`
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  transition: all 0.3s ease;
+  
+  &:focus {
+    border-color: #4cc9f0;
+    box-shadow: 0 0 0 0.25rem rgba(76, 201, 240, 0.25);
+  }
+`;
+
+const StyledTextArea = styled(StyledFormControl)`
+  min-height: 120px;
+`;
+
+const PrimaryButton = styled(Button)`
+  background-color: #1a1a2e;
+  border: none;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  
+  &:hover {
+    background-color: #2a2a40;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  svg {
+    margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+  }
+  
+  &:hover svg {
+    transform: translateX(3px);
+  }
+`;
+
+const FormIcon = styled.span`
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+`;
+
+const FormGroupWithIcon = styled(Form.Group)`
+  position: relative;
+  
+  ${Form.Label} {
+    padding-left: 35px;
+  }
+  
+  ${StyledFormControl} {
+    padding-left: 45px;
+  }
+`;
+
+const SuccessCard = styled(RequestAccessCard)`
+  text-align: center;
+  padding: 3rem;
+  
+  h2 {
+    color: #1a1a2e;
+    margin-bottom: 1.5rem;
+  }
+  
+  p {
+    color: #6c757d;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
 `;
 
 const RequestAccess = () => {
@@ -49,126 +161,138 @@ const RequestAccess = () => {
 
   if (success) {
     return (
-      <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-        <RequestAccessCard className="p-5 text-center">
-          <h2 className="mb-4">Request Submitted</h2>
-          <p className="mb-4">
-            Thank you for your interest! We've received your access request and will review it shortly.
-            You'll receive an email with our decision.
+      <RequestAccessContainer>
+        <SuccessCard>
+          <h2>Request Submitted Successfully</h2>
+          <p>
+            Thank you for your interest in ADPA! We've received your access request and will review it shortly.
+            You'll receive an email notification once your request has been processed.
           </p>
-          <Button variant="primary" onClick={() => setSuccess(false)}>
-            Submit Another Request
-          </Button>
-        </RequestAccessCard>
-      </Container>
+          <PrimaryButton onClick={() => setSuccess(false)}>
+            Submit Another Request <FiArrowRight />
+          </PrimaryButton>
+        </SuccessCard>
+      </RequestAccessContainer>
     );
   }
 
   return (
-    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-      <Row className="w-100">
-        <Col md={8} lg={6} xl={5} className="mx-auto">
-          <RequestAccessCard className="p-4 p-md-5">
-            <h2 className="text-center mb-4">Request Access</h2>
-            <p className="text-center text-muted mb-4">
-              Please fill out this form to request access to our member portal.
-            </p>
+    <RequestAccessContainer>
+      <Row className="w-100 justify-content-center">
+        <Col md={10} lg={8} xl={6}>
+          <RequestAccessCard>
+            <FormHeader>
+              <h2>Member Portal Access Request</h2>
+              <p>Complete this form to request access to ADPA's exclusive member resources</p>
+            </FormHeader>
+            
+            <FormBody>
+              {error && <Alert variant="danger" className="text-center">{error}</Alert>}
 
-            {error && <Alert variant="danger" className="text-center">{error}</Alert>}
+              <Form onSubmit={handleSubmit}>
+                <FormGroupWithIcon className="mb-4">
+                  <Form.Label>Email Address</Form.Label>
+                  <FiMail className="position-absolute" size={20} />
+                  <StyledFormControl
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    placeholder="your@email.com"
+                  />
+                </FormGroupWithIcon>
 
-            <Form onSubmit={handleSubmit}>
-              <Form.Group className="mb-3">
-                <Form.Label>Email Address</Form.Label>
-                <Form.Control
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="your@email.com"
-                />
-              </Form.Group>
+                <Row className="mb-4">
+                  <Col md={6} className="mb-3 mb-md-0">
+                    <FormGroupWithIcon>
+                      <Form.Label>First Name</Form.Label>
+                      <FiUser className="position-absolute" size={20} />
+                      <StyledFormControl
+                        type="text"
+                        name="first_name"
+                        value={formData.first_name}
+                        onChange={handleChange}
+                        required
+                      />
+                    </FormGroupWithIcon>
+                  </Col>
+                  <Col md={6}>
+                    <FormGroupWithIcon>
+                      <Form.Label>Last Name</Form.Label>
+                      <FiUser className="position-absolute" size={20} />
+                      <StyledFormControl
+                        type="text"
+                        name="last_name"
+                        value={formData.last_name}
+                        onChange={handleChange}
+                        required
+                      />
+                    </FormGroupWithIcon>
+                  </Col>
+                </Row>
 
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>First Name</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="first_name"
-                      value={formData.first_name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Last Name</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="last_name"
-                      value={formData.last_name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
+                <FormGroupWithIcon className="mb-4">
+                  <Form.Label>Organization</Form.Label>
+                  <FiBriefcase className="position-absolute" size={20} />
+                  <StyledFormControl
+                    type="text"
+                    name="organization"
+                    value={formData.organization}
+                    onChange={handleChange}
+                    required
+                  />
+                </FormGroupWithIcon>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Organization</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="organization"
-                  value={formData.organization}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
+                <FormGroupWithIcon className="mb-4">
+                  <Form.Label>Position</Form.Label>
+                  <FiBriefcase className="position-absolute" size={20} />
+                  <StyledFormControl
+                    type="text"
+                    name="position"
+                    value={formData.position}
+                    onChange={handleChange}
+                    required
+                  />
+                </FormGroupWithIcon>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Position</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  required
-                />
-              </Form.Group>
+                <FormGroupWithIcon className="mb-4">
+                  <Form.Label>Purpose of Access</Form.Label>
+                  <FiFileText className="position-absolute" size={20} />
+                  <StyledTextArea
+                    as="textarea"
+                    rows={4}
+                    name="purpose"
+                    value={formData.purpose}
+                    onChange={handleChange}
+                    required
+                    placeholder="Please describe why you need access to the member portal..."
+                  />
+                </FormGroupWithIcon>
 
-              <Form.Group className="mb-4">
-                <Form.Label>Purpose of Access</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={4}
-                  name="purpose"
-                  value={formData.purpose}
-                  onChange={handleChange}
-                  required
-                  placeholder="Please describe why you need access..."
-                />
-              </Form.Group>
-
-              <div className="d-grid">
-                <Button 
-                  type="submit" 
-                  variant="primary" 
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Spinner as="span" animation="border" size="sm" />
-                  ) : (
-                    'Submit Request'
-                  )}
-                </Button>
-              </div>
-            </Form>
+                <div className="d-grid mt-4">
+                  <PrimaryButton 
+                    type="submit" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Spinner as="span" animation="border" size="sm" className="me-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Submit Request <FiArrowRight />
+                      </>
+                    )}
+                  </PrimaryButton>
+                </div>
+              </Form>
+            </FormBody>
           </RequestAccessCard>
         </Col>
       </Row>
-    </Container>
+    </RequestAccessContainer>
   );
 };
 
