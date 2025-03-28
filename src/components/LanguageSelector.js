@@ -1,17 +1,32 @@
-import React from 'react';
+import React, {useContext} from 'react';
+import styled from 'styled-components';
+import { LanguageContext } from '../contexts/LanguageContext';
+
+
+const LanguageContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+
+  button {
+    background-color: #28a745;
+    &:hover {
+      background-color: #218838;
+    }
+  }
+`;
+
 
 const LanguageSelector = () => {
-    const changeLanguage = (lang) => {
-        // Implement language change logic (e.g., using i18next)
-        console.log(`Language changed to ${lang}`);
-    };
+    //const { setLanguage } = useContext(LanguageContext);
 
     return (
-        <div>
-            <button onClick={() => changeLanguage('en')}>English</button>
-            <button onClick={() => changeLanguage('fr')}>Français</button>
-            <button onClick={() => changeLanguage('pt')}>Português</button>
-        </div>
+        <LanguageContainer>
+            <button onClick={() => setLanguage('en')}>English</button>
+            <button onClick={() => setLanguage('fr')}>Français</button>
+            <button onClick={() => setLanguage('pt')}>Português</button>
+        </LanguageContainer>
     );
 };
 

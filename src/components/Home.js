@@ -1,16 +1,18 @@
 import React from 'react';
 import { Container, Row, Col, Carousel,Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import LanguageSelector from './LanguageSelector';
-import SurveyForm from './SurveyForm';
-//import logo from '../assets/adpa-logo.png';
+//import LanguageSelector from './LanguageSelector';
+//import SurveyForm from './SurveyForm';
+//import logo from '../assets/ADPA2logo.png';
 
-// Import images for the carousel (replace with your own images)
+//Import images for the carousel (replace with your own images)
 import image1 from '../assets/slideshow/image1.jpg';
 import image2 from '../assets/slideshow/image2.jpg';
 import image3 from '../assets/slideshow/image3.jpg';
 import image4 from '../assets/slideshow/image4.jpg';
 import image5 from '../assets/slideshow/image5.jpg';
+import diamondImage from '../assets/diamond-brillance.jpg';
+import logo from '../assets/ADPA_LOGO.jpg';
 import News from './News';
 
 const Home = () => {
@@ -68,19 +70,45 @@ const Home = () => {
             <Container className="my-5">
                 <Row className="justify-content-center">
                     <Col md={8} className="text-center">
-                        {/*<img
+                        <img
                             src={logo}
                             alt="ADPA Logo"
                             className="img-fluid mb-4"
                             style={{ maxWidth: '200px' }}
-                        /> */}
-                        <div className="d-flex justify-content-end mb-4">
+                        /> 
+                        {/*<div className="d-flex justify-content-end mb-4">
                         <LanguageSelector />
-                        </div>
+                        </div>*/}
                         <h1 className="mb-3">Welcome to ADPA</h1>
-                        <p className="lead">
+                        {/* Diamond Brilliance Section */}
+                        <div className="diamond-brilliance-section mb-5">
+                            <p className="lead mb-4">
+                                Together Empowering the Brilliance of African Diamonds
+                            </p>
+                            <div className="diamond-image-container">
+                                <img
+                                    src={diamondImage}
+                                    alt="Brilliant African Diamond"
+                                    className="img-fluid rounded shadow"
+                                    style={{ 
+                                        maxWidth: '100%', 
+                                        maxHeight: '300px',
+                                        objectFit: 'cover',
+                                        filter: 'brightness(1.05) contrast(1.1)'
+                                    }}
+                                />
+                                <div className="diamond-overlay-text">
+                                    <p className="text-white font-italic mb-0">
+                                        "The true brilliance of Africa's diamond heritage"
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        {/*<p className="lead">
                             Together Empowering the Brilliance of African Diamonds
-                        </p>
+                        </p>*/}
                         
                         <News />
                         {/*<SurveyForm /> */}
