@@ -5,12 +5,16 @@ import { Navbar as BootstrapNavbar, Nav, Container, NavDropdown } from 'react-bo
 import styled from 'styled-components';
 import { FiUser, FiChevronDown, FiExternalLink } from 'react-icons/fi';
 
+// Import Google Fonts
+import './Navbar.css'; // Create this file for font imports
+
 // Styled components
 const StyledNavbar = styled(BootstrapNavbar)`
-  background-color: #1a1a2e;
+  background-color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 0.5rem 0;
   transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
 
   @media (min-width: 992px) {
     padding: 1rem 0;
@@ -28,49 +32,32 @@ const NavLogo = styled.img`
 `;
 
 const NavLink = styled(Nav.Link)`
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: #1a1a2e !important;
   font-weight: 500;
   padding: 0.75rem 1rem !important;
   margin: 0 0.25rem;
   position: relative;
   transition: all 0.2s ease;
+  text-decoration: none !important;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
 
   &:hover {
-    color: white !important;
-  }
-
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 2px;
-    background: #4cc9f0;
-    transition: all 0.3s ease;
-    transform: translateX(-50%);
-  }
-
-  &:hover:after {
-    width: 60%;
+    color: #4cc9f0 !important;
   }
 
   &.active {
-    color: white !important;
+    color: #4cc9f0 !important;
     font-weight: 600;
-  }
-
-  &.active:after {
-    width: 60%;
-    background: #4cc9f0;
   }
 `;
 
 const MemberPortalButton = styled(Link)`
-  background: transparent;
-  border: 2px solid #4cc9f0;
+  background: #1a1a2e;
+  border: 2px solid #1a1a2e;
   border-radius: 30px;
-  color: white;
+  color: white !important;
   font-size: 0.9rem;
   font-weight: 500;
   padding: 0.5rem 1.5rem;
@@ -79,10 +66,12 @@ const MemberPortalButton = styled(Link)`
   align-items: center;
   transition: all 0.3s ease;
   text-decoration: none !important;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.5px;
 
   &:hover {
-    background: rgba(76, 201, 240, 0.1);
-    color: white;
+    background: #2a2a40;
+    color: white !important;
     transform: translateY(-1px);
   }
 
@@ -93,41 +82,49 @@ const MemberPortalButton = styled(Link)`
 
 const CustomNavDropdown = styled(NavDropdown)`
   .dropdown-toggle {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: #1a1a2e !important;
     font-weight: 500;
     padding: 0.75rem 1rem !important;
     margin: 0 0.25rem;
     display: flex;
     align-items: center;
+    text-decoration: none !important;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
 
     &:after {
       margin-left: 0.5rem;
     }
 
     &:hover {
-      color: white !important;
+      color: #4cc9f0 !important;
     }
   }
 
   .dropdown-menu {
-    background-color: #2a2a40;
-    border: none;
+    background-color: white;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 0.5rem 0;
     margin-top: 0.5rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    font-family: 'Poppins', sans-serif;
   }
 
   .dropdown-item {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: #1a1a2e !important;
     padding: 0.5rem 1.5rem !important;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
+    text-decoration: none !important;
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
 
     &:hover {
-      background-color: rgba(76, 201, 240, 0.1) !important;
-      color: white !important;
+      background-color: #f8f9fa !important;
+      color: #4cc9f0 !important;
     }
 
     svg {
@@ -164,7 +161,7 @@ const Navbar = () => {
       expand="lg" 
       expanded={expanded}
       className={scrolled ? 'scrolled' : ''}
-      variant="dark"
+      variant="light"
     >
       <Container>
         <BootstrapNavbar.Brand as={Link} to="/" onClick={closeNavbar}>
