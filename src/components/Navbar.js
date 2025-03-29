@@ -5,10 +5,7 @@ import { Navbar as BootstrapNavbar, Nav, Container, NavDropdown } from 'react-bo
 import styled from 'styled-components';
 import { FiUser, FiChevronDown, FiExternalLink } from 'react-icons/fi';
 
-// Import Google Fonts
-import './Navbar.css'; // Create this file for font imports
-
-// Styled components
+// Styled Components
 const StyledNavbar = styled(BootstrapNavbar)`
   background-color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -127,10 +124,28 @@ const CustomNavDropdown = styled(NavDropdown)`
       color: #4cc9f0 !important;
     }
 
+    &.active {
+      color: #4cc9f0 !important;
+      font-weight: 600;
+    }
+
     svg {
       margin-left: 0.5rem;
       opacity: 0.7;
       font-size: 0.8rem;
+    }
+  }
+
+  @media (max-width: 991.98px) {
+    .dropdown-menu {
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .dropdown-item {
+      padding: 0.5rem 1rem !important;
     }
   }
 `;
@@ -138,6 +153,7 @@ const CustomNavDropdown = styled(NavDropdown)`
 const Navbar = () => {
   const [expanded, setExpanded] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showAboutDropdown, setShowAboutDropdown] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -154,6 +170,14 @@ const Navbar = () => {
 
   const closeNavbar = () => {
     setExpanded(false);
+    setShowAboutDropdown(false);
+  };
+
+  const handleAboutDropdown = (e) => {
+    // Only toggle on mobile (when navbar is expanded)
+    if (expanded) {
+      setShowAboutDropdown(!showAboutDropdown);
+    }
   };
 
   return (
@@ -170,7 +194,7 @@ const Navbar = () => {
         
         <BootstrapNavbar.Toggle 
           aria-controls="basic-navbar-nav" 
-          onClick={() => setExpanded(expanded ? false : true)}
+          onClick={() => setExpanded(!expanded)}
         />
         
         <BootstrapNavbar.Collapse id="basic-navbar-nav">
@@ -184,14 +208,63 @@ const Navbar = () => {
               Home
             </NavLink>
             
-            <NavLink 
-              as={Link} 
-              to="/about" 
-              onClick={closeNavbar}
-              className={location.pathname === '/about' ? 'active' : ''}
+            <CustomNavDropdown
+              title={
+                <>
+                  About <FiChevronDown />
+                </>
+              }
+              id="about-nav-dropdown"
+              show={showAboutDropdown}
+              onMouseEnter={() => !expanded && setShowAboutDropdown(true)}
+              onMouseLeave={() => !expanded && setShowAboutDropdown(false)}
+              onClick={handleAboutDropdown}
             >
-              About
-            </NavLink>
+              <NavDropdown.Item 
+                as={Link} 
+                to="/about" 
+                onClick={closeNavbar}
+                className={location.pathname === '/about' ? 'active' : ''}
+              >
+                About Us
+              </NavDropdown.Item>
+              
+              <NavDropdown.Item 
+                as={Link} 
+                to="/governance" 
+                onClick={closeNavbar}
+                className={location.pathname === '/governance' ? 'active' : ''}
+              >
+                Governance <FiExternalLink />
+              </NavDropdown.Item>
+              
+              <NavDropdown.Item 
+                as={Link} 
+                to="/executive-directorate" 
+                onClick={closeNavbar}
+                className={location.pathname === '/executive-directorate' ? 'active' : ''}
+              >
+                Executive Directorate <FiExternalLink />
+              </NavDropdown.Item>
+              
+              <NavDropdown.Item 
+                as={Link} 
+                to="/faq" 
+                onClick={closeNavbar}
+                className={location.pathname === '/faq' ? 'active' : ''}
+              >
+                FAQ <FiExternalLink />
+              </NavDropdown.Item>
+              
+              <NavDropdown.Item 
+                as={Link} 
+                to="/career" 
+                onClick={closeNavbar}
+                className={location.pathname === '/career' ? 'active' : ''}
+              >
+                Careers <FiExternalLink />
+              </NavDropdown.Item>
+            </CustomNavDropdown>
             
             <NavLink 
               as={Link} 
@@ -220,54 +293,14 @@ const Navbar = () => {
               News
             </NavLink>
             
-            <CustomNavDropdown
-              title={
-                <>
-                  More <FiChevronDown />
-                </>
-              }
-              id="basic-nav-dropdown"
+            <NavLink 
+              as={Link} 
+              to="/gallery" 
+              onClick={closeNavbar}
+              className={location.pathname === '/gallery' ? 'active' : ''}
             >
-              <NavDropdown.Item 
-                as={Link} 
-                to="/governance" 
-                onClick={closeNavbar}
-              >
-                ADPA Governance <FiExternalLink />
-              </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/executive-directorate" 
-                onClick={closeNavbar}
-              >
-                Executive Directorate <FiExternalLink />
-              </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/faq" 
-                onClick={closeNavbar}
-              >
-                FAQ <FiExternalLink />
-              </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/gallery" 
-                onClick={closeNavbar}
-              >
-                Gallery <FiExternalLink />
-              </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/career" 
-                onClick={closeNavbar}
-              >
-                Career <FiExternalLink />
-              </NavDropdown.Item>
-            </CustomNavDropdown>
+              Gallery
+            </NavLink>
           </Nav>
           
           <MemberPortalButton to="/login" onClick={closeNavbar}>

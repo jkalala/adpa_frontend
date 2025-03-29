@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import styled, { keyframes } from 'styled-components';
-import { FiClock, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
+import { FiClock, FiAlertCircle, FiRefreshCw, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 // Styled Components
 const NewsContainer = styled.div`
@@ -139,6 +139,28 @@ const RefreshButton = styled.button`
   }
 `;
 
+const ReadMoreButton = styled.button`
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+  margin-top: 0.5rem;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #2563eb;
+  }
+
+  svg {
+    transition: transform 0.2s ease;
+  }
+`;
+
 // Loading animation
 const shimmer = keyframes`
   0% { background-position: -468px 0 }
@@ -164,6 +186,14 @@ const News = () => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [expandedArticles, setExpandedArticles] = useState({});
+
+  const toggleExpand = (articleId) => {
+    setExpandedArticles(prev => ({
+      ...prev,
+      [articleId]: !prev[articleId]
+    }));
+  };
 
   const formatContent = (content) => {
     if (!content || !Array.isArray(content)) return [];
@@ -203,9 +233,16 @@ const News = () => {
                   item.image?.formats?.large?.url || 
                   (imageBlock ? imageBlock.text.replace('Image: ', '') : null)
           };
-        }).filter(item => item); // Remove any null/undefined items
+        }).filter(item => item);
         
         setNews(formattedNews);
+        // Initialize all articles as not expanded
+        setExpandedArticles(
+          formattedNews.reduce((acc, article) => {
+            acc[article.id] = false;
+            return acc;
+          }, {})
+        );
       } else {
         throw new Error('No data received from API');
       }
@@ -278,40 +315,63 @@ const News = () => {
       {news.length === 0 ? (
         <p>No news articles found.</p>
       ) : (
-        news.map((article) => (
-          <NewsArticle key={article.id}>
-            <ArticleHeader>
-              <ArticleTitle>{article.title}</ArticleTitle>
-              <ArticleDate>
-                <FiClock /> {new Date(article.publishedAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </ArticleDate>
-            </ArticleHeader>
-            
-            {article.image && (
-              <ArticleImage
-                src={article.image.includes('http') ? article.image : `http://localhost:1337${article.image}`}
-                alt={article.title}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                }}
-              />
-            )}
-            
-            <ArticleContent>
-              {article.textContent?.length > 0 ? (
-                article.textContent.map((paragraph, i) => (
-                  <p key={i}>{paragraph}</p>
-                ))
-              ) : (
-                <p>No content available</p>
+        news.map((article) => {
+          // Calculate half of the content
+          const halfContentLength = Math.ceil(article.textContent.length / 2);
+          const showHalfContent = !expandedArticles[article.id] && article.textContent.length > 1;
+          const displayContent = showHalfContent 
+            ? article.textContent.slice(0, halfContentLength)
+            : article.textContent;
+
+          return (
+            <NewsArticle key={article.id}>
+              <ArticleHeader>
+                <ArticleTitle>{article.title}</ArticleTitle>
+                <ArticleDate>
+                  <FiClock /> {new Date(article.publishedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </ArticleDate>
+              </ArticleHeader>
+              
+              {article.image && (
+                <ArticleImage
+                  src={article.image.includes('http') ? article.image : `http://localhost:1337${article.image}`}
+                  alt={article.title}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
               )}
-            </ArticleContent>
-          </NewsArticle>
-        ))
+              
+              <ArticleContent>
+                {displayContent?.length > 0 ? (
+                  displayContent.map((paragraph, i) => (
+                    <p key={i}>{paragraph}</p>
+                  ))
+                ) : (
+                  <p>No content available</p>
+                )}
+
+                {article.textContent.length > 1 && (
+                  <ReadMoreButton onClick={() => toggleExpand(article.id)}>
+                    {expandedArticles[article.id] ? (
+                      <>
+                        <FiChevronUp /> Show Less
+                      </>
+                    ) : (
+                      <>
+                        <FiChevronDown /> Read More
+                      </>
+                    )}
+                  </ReadMoreButton>
+                )}
+              </ArticleContent>
+            </NewsArticle>
+          );
+        })
       )}
     </NewsContainer>
   );

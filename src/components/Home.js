@@ -200,9 +200,9 @@ const Home = () => {
                             className="img-fluid mb-4"
                             style={{ maxWidth: '200px', filter: 'drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1))' }}
                         />*/}
-                        <h1 className="mb-4" style={{ fontWeight: '700', color: '#1a1a2e' }}>
+                        {/*<h1 className="mb-4" style={{ fontWeight: '700', color: '#1a1a2e' }}>
                             Welcome to ADPA
-                        </h1>
+                        </h1>*/}
                     </Col>
                 </Row>
 
