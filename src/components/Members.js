@@ -194,6 +194,7 @@ const Members = () => {
     { name: 'Algeria', code: 'dz' },
     { name: 'Mali', code: 'ml' },
     { name: 'Mauritania', code: 'mr' },
+    { name: 'Mozambique', code: 'mz' },
     { name: 'Gabon', code: 'ga' },
     { name: 'Russian Federation', code: 'ru' }
   ];
@@ -217,7 +218,7 @@ const Members = () => {
             </CardHeader>
             <Card.Body>
               <p className="text-muted mb-4">
-                Full member states are African diamond-producing countries that have 
+                Effective members are African diamond-producing countries that have 
                 ratified the ADPA Statute and comply with the Kimberley Process 
                 Certification Scheme requirements.
               </p>
@@ -241,13 +242,17 @@ const Members = () => {
         <Col lg={6}>
           <MemberCard>
             <CardHeader>
-              <h3><FiFlag /> Observer Countries</h3>
+              <h3><FiFlag /> Observers</h3>
               <span className="badge">{observerCountries.length} Countries</span>
             </CardHeader>
             <Card.Body>
               <p className="text-muted mb-4">
-                Observer status is available to African nations with diamond potential 
-                and non-African entities involved in the diamond value chain.
+              <ul>
+                <li><strong>Potential African Diamond Producers:</strong> Nations with geological diamond resources aiming for future production.</li>
+                <li><strong>Non-Compliant African Producers:</strong> Countries currently producing diamonds but not meeting Kimberley Process standards.</li>
+               <li><strong>Global Diamond Value Chain Participants:</strong> Non-African countries and organizations aligned with the Kimberley Process's statutes and regulations.</li>
+              </ul>
+
               </p>
               <h6 className="font-weight-bold mb-3">Current Observers:</h6>
               <div className="country-list">
