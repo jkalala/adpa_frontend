@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import styled, { keyframes } from 'styled-components';
-import { FiClock, FiAlertCircle, FiRefreshCw, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiClock, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 
 // Styled Components
 const NewsContainer = styled.div`
   background-color: #ffffff;
-  padding: 2.5rem;
-  border-radius: 12px;
+  padding: 2rem;
+  border-radius: 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  max-width: 900px;
+  max-width: 100%;
   margin: 2rem auto;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
 `;
 
 const NewsHeader = styled.div`
@@ -30,36 +31,61 @@ const NewsHeader = styled.div`
   }
 `;
 
-const NewsArticle = styled.article`
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #f0f0f0;
-  transition: transform 0.2s ease;
+const NewsScroller = styled.div`
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 
-  &:hover {
-    transform: translateY(-2px);
-  }
-
-  &:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
+  &::-webkit-scrollbar {
+    display: none;
   }
 `;
 
-const ArticleHeader = styled.div`
+const NewsArticle = styled.article`
+  min-width: 320px;
+  max-width: 380px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  &:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+`;
+
+const ArticleImage = styled.img`
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  object-fit: cover;
+`;
+
+const ArticleHeader = styled.div`
   margin-bottom: 1rem;
 `;
 
 const ArticleTitle = styled.h3`
-  margin: 0;
+  margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: #1a1a1a;
-  flex: 1;
+  line-height: 1.4;
 `;
 
 const ArticleDate = styled.small`
@@ -67,7 +93,7 @@ const ArticleDate = styled.small`
   align-items: center;
   color: #6b7280;
   font-size: 0.875rem;
-  margin-left: 1.5rem;
+  margin-bottom: 1rem;
 
   svg {
     margin-right: 0.5rem;
@@ -77,24 +103,63 @@ const ArticleDate = styled.small`
 const ArticleContent = styled.div`
   color: #4b5563;
   line-height: 1.6;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  flex-grow: 1;
 
   p {
     margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: ${props => props.collapsed ? '3' : 'unset'};
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 `;
 
-const ArticleImage = styled.img`
-  width: 100%;
-  border-radius: 8px;
-  margin-bottom: 1.25rem;
-  object-fit: cover;
-  height: 300px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease;
+const ReadMoreButton = styled.button`
+  background: none;
+  border: 1px solid #e5e7eb;
+  color: #3b82f6;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  margin-top: auto;
 
   &:hover {
-    transform: scale(1.02);
+    background-color: #f0f7ff;
+    border-color: #3b82f6;
+  }
+
+  &:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+`;
+
+const NavigationControls = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+`;
+
+const NavButton = styled.button`
+  background: ${props => props.active ? '#3b82f6' : '#f3f4f6'};
+  color: ${props => props.active ? 'white' : '#4b5563'};
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${props => props.active ? '#2563eb' : '#e5e7eb'};
   }
 `;
 
@@ -111,13 +176,6 @@ const ErrorState = styled.div`
   svg {
     font-size: 2rem;
     margin-bottom: 1rem;
-  }
-
-  button {
-    margin-top: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 `;
 
@@ -139,29 +197,6 @@ const RefreshButton = styled.button`
   }
 `;
 
-const ReadMoreButton = styled.button`
-  background: none;
-  border: none;
-  color: #3b82f6;
-  cursor: pointer;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0;
-  margin-top: 0.5rem;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: #2563eb;
-  }
-
-  svg {
-    transition: transform 0.2s ease;
-  }
-`;
-
-// Loading animation
 const shimmer = keyframes`
   0% { background-position: -468px 0 }
   100% { background-position: 468px 0 }
@@ -177,22 +212,56 @@ const LoadingPlaceholder = styled.div`
   margin-bottom: ${props => props.marginBottom || '0.5rem'};
 `;
 
-const LoadingImagePlaceholder = styled(LoadingPlaceholder)`
-  height: 300px;
+const LoadingImagePlaceholder = styled.div`
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
   margin-bottom: 1.25rem;
+  background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
+  background-size: 800px 104px;
+  animation: ${shimmer} 1.5s infinite linear;
 `;
 
 const News = () => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedArticles, setExpandedArticles] = useState({});
+  const [expandedArticleId, setExpandedArticleId] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollerRef = useRef(null);
+  const articleRefs = useRef([]);
 
-  const toggleExpand = (articleId) => {
-    setExpandedArticles(prev => ({
-      ...prev,
-      [articleId]: !prev[articleId]
-    }));
+  const toggleExpand = (articleId, index) => {
+    setExpandedArticleId(prev => prev === articleId ? null : articleId);
+    setCurrentIndex(index);
+    
+    setTimeout(() => {
+      if (articleRefs.current[index] && scrollerRef.current) {
+        const article = articleRefs.current[index];
+        const container = scrollerRef.current;
+        const containerWidth = container.offsetWidth;
+        const articleWidth = article.offsetWidth;
+        const articleLeft = article.offsetLeft;
+        
+        container.scrollTo({
+          left: articleLeft - (containerWidth / 2) + (articleWidth / 2),
+          behavior: 'smooth'
+        });
+        
+        article.focus();
+      }
+    }, 50);
+  };
+
+  const scrollToArticle = (index) => {
+    if (scrollerRef.current && news.length > 0) {
+      const articleWidth = 320 + 24;
+      scrollerRef.current.scrollTo({
+        left: index * articleWidth,
+        behavior: 'smooth'
+      });
+      setCurrentIndex(index);
+    }
   };
 
   const formatContent = (content) => {
@@ -236,13 +305,6 @@ const News = () => {
         }).filter(item => item);
         
         setNews(formattedNews);
-        // Initialize all articles as not expanded
-        setExpandedArticles(
-          formattedNews.reduce((acc, article) => {
-            acc[article.id] = false;
-            return acc;
-          }, {})
-        );
       } else {
         throw new Error('No data received from API');
       }
@@ -264,24 +326,35 @@ const News = () => {
         <NewsHeader>
           <h2>News</h2>
         </NewsHeader>
-        {[...Array(2)].map((_, i) => (
-          <NewsArticle key={i}>
-            <ArticleHeader>
-              <ArticleTitle>
-                <LoadingPlaceholder width="70%" />
-              </ArticleTitle>
-              <ArticleDate>
-                <LoadingPlaceholder width="100px" />
-              </ArticleDate>
-            </ArticleHeader>
-            <ArticleContent>
-              <LoadingPlaceholder />
-              <LoadingPlaceholder width="90%" />
-              <LoadingPlaceholder width="80%" />
-            </ArticleContent>
-            <LoadingImagePlaceholder />
-          </NewsArticle>
-        ))}
+        <NewsScroller>
+          {[...Array(4)].map((_, i) => (
+            <NewsArticle key={i}>
+              <LoadingImagePlaceholder />
+              <ArticleHeader>
+                <ArticleTitle>
+                  <LoadingPlaceholder width="80%" />
+                </ArticleTitle>
+                <ArticleDate>
+                  <LoadingPlaceholder width="120px" />
+                </ArticleDate>
+              </ArticleHeader>
+              <ArticleContent>
+                <LoadingPlaceholder />
+                <LoadingPlaceholder />
+              </ArticleContent>
+              <ReadMoreButton>
+                <LoadingPlaceholder width="80px" height="20px" />
+              </ReadMoreButton>
+            </NewsArticle>
+          ))}
+        </NewsScroller>
+        <NavigationControls>
+          {[...Array(4)].map((_, i) => (
+            <NavButton key={i} active={i === 0}>
+              {i + 1}
+            </NavButton>
+          ))}
+        </NavigationControls>
       </NewsContainer>
     );
   }
@@ -312,66 +385,77 @@ const News = () => {
         </RefreshButton>
       </NewsHeader>
 
-      {news.length === 0 ? (
-        <p>No news articles found.</p>
-      ) : (
-        news.map((article) => {
-          // Calculate half of the content
-          const halfContentLength = Math.ceil(article.textContent.length / 2);
-          const showHalfContent = !expandedArticles[article.id] && article.textContent.length > 1;
-          const displayContent = showHalfContent 
-            ? article.textContent.slice(0, halfContentLength)
-            : article.textContent;
+      <NewsScroller ref={scrollerRef}>
+        {news.length === 0 ? (
+          <p>No news articles found.</p>
+        ) : (
+          news.map((article, index) => {
+            const isExpanded = expandedArticleId === article.id;
+            const displayContent = isExpanded ? article.textContent : [article.textContent[0]];
 
-          return (
-            <NewsArticle key={article.id}>
-              <ArticleHeader>
-                <ArticleTitle>{article.title}</ArticleTitle>
-                <ArticleDate>
-                  <FiClock /> {new Date(article.publishedAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </ArticleDate>
-              </ArticleHeader>
-              
-              {article.image && (
-                <ArticleImage
-                  src={article.image.includes('http') ? article.image : `http://localhost:1337${article.image}`}
-                  alt={article.title}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              )}
-              
-              <ArticleContent>
-                {displayContent?.length > 0 ? (
-                  displayContent.map((paragraph, i) => (
-                    <p key={i}>{paragraph}</p>
-                  ))
-                ) : (
-                  <p>No content available</p>
+            return (
+              <NewsArticle 
+                key={article.id}
+                ref={el => articleRefs.current[index] = el}
+                tabIndex="0"
+                id={`article-${article.id}`}
+                aria-expanded={isExpanded}
+              >
+                {article.image && (
+                  <ArticleImage
+                    src={article.image.includes('http') ? article.image : `http://localhost:1337${article.image}`}
+                    alt={article.title}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
                 )}
+                
+                <ArticleHeader>
+                  <ArticleTitle>{article.title}</ArticleTitle>
+                  <ArticleDate>
+                    <FiClock /> {new Date(article.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </ArticleDate>
+                </ArticleHeader>
+                
+                <ArticleContent collapsed={!isExpanded}>
+                  {displayContent?.length > 0 ? (
+                    displayContent.map((paragraph, i) => (
+                      <p key={i}>{paragraph}</p>
+                    ))
+                  ) : (
+                    <p>No content available</p>
+                  )}
+                </ArticleContent>
 
-                {article.textContent.length > 1 && (
-                  <ReadMoreButton onClick={() => toggleExpand(article.id)}>
-                    {expandedArticles[article.id] ? (
-                      <>
-                        <FiChevronUp /> Show Less
-                      </>
-                    ) : (
-                      <>
-                        <FiChevronDown /> Read More
-                      </>
-                    )}
-                  </ReadMoreButton>
-                )}
-              </ArticleContent>
-            </NewsArticle>
-          );
-        })
+                <ReadMoreButton 
+                  onClick={() => toggleExpand(article.id, index)}
+                  aria-controls={`article-${article.id}`}
+                >
+                  {isExpanded ? 'Show Less' : 'Read More'}
+                </ReadMoreButton>
+              </NewsArticle>
+            );
+          })
+        )}
+      </NewsScroller>
+
+      {news.length > 0 && (
+        <NavigationControls>
+          {news.map((_, index) => (
+            <NavButton 
+              key={index} 
+              active={index === currentIndex}
+              onClick={() => scrollToArticle(index)}
+            >
+              {index + 1}
+            </NavButton>
+          ))}
+        </NavigationControls>
       )}
     </NewsContainer>
   );

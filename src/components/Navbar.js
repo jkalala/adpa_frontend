@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/ADPA_LOGO_1.png';
-import { Navbar as BootstrapNavbar, Nav, Container, NavDropdown } from 'react-bootstrap';
+import { 
+  Navbar as BootstrapNavbar, 
+  Nav, 
+  Container, 
+  NavDropdown,
+  DropdownToggle,
+  DropdownMenu,
+  Badge,
+  Spinner
+} from 'react-bootstrap';
 import styled from 'styled-components';
-import { FiUser, FiChevronDown, FiExternalLink } from 'react-icons/fi';
+import { FiUser, FiChevronDown, FiExternalLink, FiBell, FiLogOut } from 'react-icons/fi';
+import { useAuth } from '../auth/authProvider';
+
+// Google Font import
+const fontFamily = "'Roboto', sans-serif";
 
 // Styled Components
 const StyledNavbar = styled(BootstrapNavbar)`
@@ -11,7 +24,8 @@ const StyledNavbar = styled(BootstrapNavbar)`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 0.5rem 0;
   transition: all 0.3s ease;
-  font-family: 'Poppins', sans-serif;
+  font-family: ${fontFamily};
+  font-size: 0.9rem;
 
   @media (min-width: 992px) {
     padding: 1rem 0;
@@ -36,9 +50,10 @@ const NavLink = styled(Nav.Link)`
   position: relative;
   transition: all 0.2s ease;
   text-decoration: none !important;
-  font-family: 'Poppins', sans-serif;
-  font-size: 0.95rem;
+  font-family: ${fontFamily};
+  font-size: 0.9rem;
   letter-spacing: 0.5px;
+  text-transform: capitalize;
 
   &:hover {
     color: #4cc9f0 !important;
@@ -50,262 +65,288 @@ const NavLink = styled(Nav.Link)`
   }
 `;
 
+const NotificationBadge = styled(Badge)`
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 0.6rem;
+  padding: 0.25em 0.4em;
+`;
+
 const MemberPortalButton = styled(Link)`
-  background: #1a1a2e;
-  border: 2px solid #1a1a2e;
-  border-radius: 30px;
-  color: white !important;
+  background: white !important;
+  color: #1a1a2e !important;
+  border: 1px solid #1a1a2e !important;
+  border-radius: 4px !important;
+  padding: 0.5rem 1.5rem !important;
+  font-family: ${fontFamily};
   font-size: 0.9rem;
-  font-weight: 500;
-  padding: 0.5rem 1.5rem;
-  margin-left: 1rem;
-  display: flex;
-  align-items: center;
-  transition: all 0.3s ease;
   text-decoration: none !important;
-  font-family: 'Poppins', sans-serif;
-  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  margin-left: 1rem;
+  font-weight: 700;
+  text-transform: capitalize;
 
   &:hover {
-    background: #2a2a40;
+    background: #4cc9f0 !important;
     color: white !important;
+    border-color: #4cc9f0 !important;
     transform: translateY(-1px);
   }
+`;
 
-  svg {
-    margin-right: 0.5rem;
+const UserDropdownToggle = styled(DropdownToggle)`
+  display: flex;
+  align-items: center;
+  background: none !important;
+  border: none !important;
+  color: #1a1a2e !important;
+  font-weight: 500;
+  padding: 0.75rem 1rem !important;
+  margin: 0 0.25rem;
+  font-family: ${fontFamily};
+  font-size: 0.9rem;
+  text-transform: capitalize;
+
+  &:after {
+    display: none;
+  }
+
+  &:hover {
+    color: #4cc9f0 !important;
+  }
+`;
+
+const StyledDropdownMenu = styled(DropdownMenu)`
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  font-family: ${fontFamily};
+  
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1.5rem;
+    color: #1a1a2e;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    text-transform: capitalize;
+    
+    &:hover {
+      background-color: #f8f9fa;
+      color: #4cc9f0;
+    }
+    
+    svg {
+      margin-right: 0.5rem;
+    }
+  }
+  
+  @media (max-width: 991.98px) {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
   }
 `;
 
 const CustomNavDropdown = styled(NavDropdown)`
   .dropdown-toggle {
-    color: #1a1a2e !important;
-    font-weight: 500;
-    padding: 0.75rem 1rem !important;
-    margin: 0 0.25rem;
-    display: flex;
-    align-items: center;
-    text-decoration: none !important;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.95rem;
-    letter-spacing: 0.5px;
-
     &:after {
-      margin-left: 0.5rem;
-    }
-
-    &:hover {
-      color: #4cc9f0 !important;
+      display: none !important;
     }
   }
 
   .dropdown-menu {
-    background-color: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 0.5rem 0;
-    margin-top: 0.5rem;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    font-family: 'Poppins', sans-serif;
-  }
-
-  .dropdown-item {
-    color: #1a1a2e !important;
-    padding: 0.5rem 1.5rem !important;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    text-decoration: none !important;
+    font-family: ${fontFamily};
     font-size: 0.9rem;
-    letter-spacing: 0.3px;
-
-    &:hover {
-      background-color: #f8f9fa !important;
-      color: #4cc9f0 !important;
-    }
-
-    &.active {
-      color: #4cc9f0 !important;
-      font-weight: 600;
-    }
-
-    svg {
-      margin-left: 0.5rem;
-      opacity: 0.7;
-      font-size: 0.8rem;
-    }
-  }
-
-  @media (max-width: 991.98px) {
-    .dropdown-menu {
-      border: none;
-      box-shadow: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .dropdown-item {
-      padding: 0.5rem 1rem !important;
-    }
+    text-transform: capitalize;
   }
 `;
 
 const Navbar = () => {
   const [expanded, setExpanded] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [showAboutDropdown, setShowAboutDropdown] = useState(false);
   const location = useLocation();
+  const { user, isLoading, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  const [notificationCount] = useState(user ? 3 : 0);
 
   useEffect(() => {
     const handleScroll = () => {
-      const isScrolled = window.scrollY > 10;
-      if (isScrolled !== scrolled) {
-        setScrolled(isScrolled);
-      }
+      setScrolled(window.scrollY > 10);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [scrolled]);
+  }, []);
 
   const closeNavbar = () => {
     setExpanded(false);
-    setShowAboutDropdown(false);
   };
 
-  const handleAboutDropdown = (e) => {
-    // Only toggle on mobile (when navbar is expanded)
-    if (expanded) {
-      setShowAboutDropdown(!showAboutDropdown);
-    }
+  const handleLogout = () => {
+    logout();
+    closeNavbar();
+    navigate('/login');
   };
+
+  if (isLoading) {
+    return (
+      <div style={{ height: '56px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Spinner animation="border" size="sm" />
+      </div>
+    );
+  }
 
   return (
-    <StyledNavbar 
-      expand="lg" 
-      expanded={expanded}
-      className={scrolled ? 'scrolled' : ''}
-      variant="light"
-    >
+    <StyledNavbar expand="lg" expanded={expanded} className={scrolled ? 'scrolled' : ''}>
       <Container>
         <BootstrapNavbar.Brand as={Link} to="/" onClick={closeNavbar}>
           <NavLogo src={logo} alt="ADPA Logo" />
         </BootstrapNavbar.Brand>
         
-        <BootstrapNavbar.Toggle 
-          aria-controls="basic-navbar-nav" 
-          onClick={() => setExpanded(!expanded)}
-        />
+        <BootstrapNavbar.Toggle onClick={() => setExpanded(!expanded)} />
         
-        <BootstrapNavbar.Collapse id="basic-navbar-nav">
-          <Nav className="ms-auto">
-            <NavLink 
-              as={Link} 
-              to="/" 
-              onClick={closeNavbar}
-              className={location.pathname === '/' ? 'active' : ''}
-            >
+        <BootstrapNavbar.Collapse id="navbar-collapse">
+          {/* Mobile-only Dashboard link for members */}
+          {user?.is_member && expanded && (
+            <Nav className="d-lg-none mb-3">
+              <NavLink 
+                as={Link} 
+                to="/member-dashboard" 
+                onClick={closeNavbar}
+                className="d-flex align-items-center"
+              >
+                Dashboard
+                {notificationCount > 0 && (
+                  <NotificationBadge bg="danger" pill>
+                    {notificationCount}
+                  </NotificationBadge>
+                )}
+              </NavLink>
+            </Nav>
+          )}
+          
+          <Nav className="me-auto">
+            <NavLink as={Link} to="/" onClick={closeNavbar} active={location.pathname === '/'}>
               Home
             </NavLink>
             
             <CustomNavDropdown
               title={
-                <>
-                  About <FiChevronDown />
-                </>
+                <span className="d-flex align-items-center">
+                  About <FiChevronDown className="ms-1" />
+                </span>
               }
-              id="about-nav-dropdown"
-              show={showAboutDropdown}
-              onMouseEnter={() => !expanded && setShowAboutDropdown(true)}
-              onMouseLeave={() => !expanded && setShowAboutDropdown(false)}
-              onClick={handleAboutDropdown}
+              id="about-dropdown"
+              className="d-flex align-items-center"
             >
-              <NavDropdown.Item 
-                as={Link} 
-                to="/about" 
-                onClick={closeNavbar}
-                className={location.pathname === '/about' ? 'active' : ''}
-              >
-                About Us
+              <NavDropdown.Item as={Link} to="/about" onClick={closeNavbar}>
+                About us
               </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/governance" 
-                onClick={closeNavbar}
-                className={location.pathname === '/governance' ? 'active' : ''}
-              >
-                Governance <FiExternalLink />
+              <NavDropdown.Item as={Link} to="/governance" onClick={closeNavbar}>
+                Governance <FiExternalLink className="ms-1" />
               </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/executive-directorate" 
-                onClick={closeNavbar}
-                className={location.pathname === '/executive-directorate' ? 'active' : ''}
-              >
-                Executive Directorate <FiExternalLink />
+              <NavDropdown.Item as={Link} to="/executive-directorate" onClick={closeNavbar}>
+                Executive directorate <FiExternalLink className="ms-1" />
               </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/faq" 
-                onClick={closeNavbar}
-                className={location.pathname === '/faq' ? 'active' : ''}
-              >
-                FAQ <FiExternalLink />
+              <NavDropdown.Item as={Link} to="/faq" onClick={closeNavbar}>
+                FAQ <FiExternalLink className="ms-1" />
               </NavDropdown.Item>
-              
-              <NavDropdown.Item 
-                as={Link} 
-                to="/career" 
-                onClick={closeNavbar}
-                className={location.pathname === '/career' ? 'active' : ''}
-              >
-                Careers <FiExternalLink />
+              <NavDropdown.Item as={Link} to="/career" onClick={closeNavbar}>
+                Careers <FiExternalLink className="ms-1" />
               </NavDropdown.Item>
             </CustomNavDropdown>
             
-            <NavLink 
-              as={Link} 
-              to="/services" 
-              onClick={closeNavbar}
-              className={location.pathname === '/services' ? 'active' : ''}
-            >
+            <NavLink as={Link} to="/services" onClick={closeNavbar} active={location.pathname === '/services'}>
               Services
             </NavLink>
             
-            <NavLink 
-              as={Link} 
-              to="/members" 
-              onClick={closeNavbar}
-              className={location.pathname === '/members' ? 'active' : ''}
-            >
+            <NavLink as={Link} to="/members" onClick={closeNavbar} active={location.pathname === '/members'}>
               Members
             </NavLink>
             
-            <NavLink 
-              as={Link} 
-              to="/news" 
-              onClick={closeNavbar}
-              className={location.pathname === '/news' ? 'active' : ''}
-            >
+            {/* Desktop Dashboard link for members */}
+            {user?.is_member && (
+              <NavLink 
+                as={Link} 
+                to="/member-dashboard" 
+                onClick={closeNavbar}
+                className="position-relative d-none d-lg-block"
+                active={location.pathname === '/member-dashboard'}
+              >
+                Dashboard
+                {notificationCount > 0 && (
+                  <NotificationBadge bg="danger" pill>
+                    {notificationCount}
+                  </NotificationBadge>
+                )}
+              </NavLink>
+            )}
+            
+            <NavLink as={Link} to="/news" onClick={closeNavbar} active={location.pathname === '/news'}>
               News
             </NavLink>
             
-            <NavLink 
-              as={Link} 
-              to="/gallery" 
-              onClick={closeNavbar}
-              className={location.pathname === '/gallery' ? 'active' : ''}
-            >
+            <NavLink as={Link} to="/gallery" onClick={closeNavbar} active={location.pathname === '/gallery'}>
               Gallery
             </NavLink>
           </Nav>
           
-          <MemberPortalButton to="/login" onClick={closeNavbar}>
-            <FiUser /> Member Portal
-          </MemberPortalButton>
+          <Nav>
+            {user ? (
+              <NavDropdown
+                title={
+                  <UserDropdownToggle as="div">
+                    <div className="position-relative">
+                      <FiUser />
+                      {notificationCount > 0 && (
+                        <NotificationBadge bg="danger" pill>
+                          {notificationCount}
+                        </NotificationBadge>
+                      )}
+                    </div>
+                    <span className="ms-2">{user.first_name || 'Account'}</span>
+                    <FiChevronDown className="ms-1" />
+                  </UserDropdownToggle>
+                }
+                id="user-dropdown"
+                align="end"
+                menuVariant="light"
+                drop={expanded ? 'down' : 'start'}
+              >
+                <StyledDropdownMenu>
+                  <NavDropdown.Item as={Link} to="/member-dashboard" onClick={closeNavbar}>
+                    <FiUser /> Dashboard
+                  </NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/notifications" onClick={closeNavbar}>
+                    <FiBell /> Notifications
+                    {notificationCount > 0 && (
+                      <Badge bg="danger" pill className="ms-2">
+                        {notificationCount}
+                      </Badge>
+                    )}
+                  </NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/profile" onClick={closeNavbar}>
+                    <FiUser /> My profile
+                  </NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item onClick={handleLogout}>
+                    <FiLogOut /> Logout
+                  </NavDropdown.Item>
+                </StyledDropdownMenu>
+              </NavDropdown>
+            ) : (
+              <MemberPortalButton to="/login" onClick={closeNavbar}>
+                
+                <FiUser className="me-1" /> Member portal
+              </MemberPortalButton>
+            )}
+          </Nav>
         </BootstrapNavbar.Collapse>
       </Container>
     </StyledNavbar>

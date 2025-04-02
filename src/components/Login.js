@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Container, Form, Button, Alert, Card, FormCheck, Row, Col } from 'react-bootstrap';
-import { FiLogIn, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiLogIn, FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 import styled from 'styled-components';
+import ReCAPTCHA from "react-google-recaptcha";
 
-// Styled components for modern look
+// ========== STYLED COMPONENTS ==========
 const LoginCard = styled(Card)`
   border: none;
   border-radius: 16px;
@@ -32,6 +34,26 @@ const LoginButton = styled(Button)`
   }
 `;
 
+const GoogleButton = styled(Button)`
+  background: white;
+  color: #5f6368;
+  border: 1px solid #dadce0;
+  padding: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+`;
+
 const FormIcon = styled.span`
   position: absolute;
   top: 50%;
@@ -49,28 +71,191 @@ const PasswordToggle = styled.span`
   color: #6c757d;
 `;
 
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  color: #6c757d;
+
+  &::before, &::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  &::before {
+    margin-right: 1rem;
+  }
+
+  &::after {
+    margin-left: 1rem;
+  }
+`;
+
+// Create axios instance with base URL
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
+});
+
+// Configure axios interceptors
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  response => response,
+  async error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [recaptchaValue, setRecaptchaValue] = useState(null);
+    const [recaptchaError, setRecaptchaError] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        
+        if (!recaptchaValue && process.env.NODE_ENV === 'production') {
+            setRecaptchaError(true);
+            return;
+        }
+
         setIsLoading(true);
         setError('');
         
         try {
-            const response = await axios.post('http://localhost:8000/api/login/', { email, password });
-            localStorage.setItem('accessToken', response.data.access);
-            navigate('/member-only');
+            const response = await api.post('/api/auth/login/', { 
+                email, 
+                password,
+                recaptcha_token: recaptchaValue 
+            });
+
+            const { access: accessToken, refresh: refreshToken } = response.data;
+
+            if (!accessToken) {
+                throw new Error('No access token received');
+            }
+
+            // Store tokens
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
+            
+            // Set axios defaults
+            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+            // Force state update before navigation
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Redirect to either the original path or /member-only
+            const redirectPath = location.state?.from?.pathname || '/member-only';
+            navigate(redirectPath, { replace: true });
+
         } catch (err) {
-            setError(err.response?.data?.detail || 'Invalid credentials or not a member');
+            console.error('Login error:', err);
+            setError(
+                err.response?.data?.detail || 
+                err.response?.data?.message || 
+                'Login failed. Please try again.'
+            );
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            setIsLoading(true);
+            setError('');
+
+            if (!window.google) {
+                throw new Error('Google authentication service not available');
+            }
+
+            const client = window.google.accounts.oauth2.initTokenClient({
+                client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+                scope: 'email profile openid',
+                callback: async (response) => {
+                    if (response.error) {
+                        throw new Error(response.error);
+                    }
+
+                    try {
+                        const res = await api.post('/api/auth/google/', {
+                            id_token: response.credential
+                        });
+                        
+                        localStorage.setItem('accessToken', res.data.access);
+                        localStorage.setItem('refreshToken', res.data.refresh);
+                        api.defaults.headers.common['Authorization'] = `Bearer ${res.data.access}`;
+                        navigate('/member-only', { replace: true });
+                    } catch (err) {
+                        throw new Error(err.response?.data?.error || 'Authentication failed');
+                    }
+                }
+            });
+            
+            client.requestAccessToken();
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const onRecaptchaChange = (value) => {
+        setRecaptchaValue(value);
+        setRecaptchaError(false);
+    };
+
+    const renderRecaptcha = () => {
+        const sitekey = process.env.NODE_ENV === 'development' 
+            ? '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI' // Test key
+            : process.env.REACT_APP_RECAPTCHA_SITE_KEY;
+
+        if (!sitekey) {
+            console.error('reCAPTCHA site key is missing');
+            return (
+                <Alert variant="warning" className="text-center small">
+                    Security verification is currently unavailable
+                </Alert>
+            );
+        }
+
+        return (
+            <>
+                <ReCAPTCHA
+                    sitekey={sitekey}
+                    onChange={onRecaptchaChange}
+                />
+                {recaptchaError && (
+                    <div className="text-danger small mt-1">
+                        Please verify you're not a robot
+                    </div>
+                )}
+            </>
+        );
     };
 
     return (
@@ -87,9 +272,30 @@ const Login = () => {
 
                         {error && (
                             <Alert variant="danger" className="text-center">
+                                <FiAlertCircle className="me-2" />
                                 {error}
                             </Alert>
                         )}
+
+                        <div className="d-grid mb-3">
+                            <GoogleButton 
+                                onClick={handleGoogleLogin} 
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                ) : (
+                                    <>
+                                        <FcGoogle size={20} />
+                                        Sign in with Google
+                                    </>
+                                )}
+                            </GoogleButton>
+                        </div>
+
+                        <Divider>
+                            <span className="small">OR</span>
+                        </Divider>
 
                         <Form onSubmit={handleLogin}>
                             <Form.Group className="mb-4 position-relative">
@@ -140,6 +346,10 @@ const Login = () => {
                                 <a href="/password-recovery" className="small text-decoration-none">
                                     Forgot password?
                                 </a>
+                            </div>
+
+                            <div className="mb-3">
+                                {renderRecaptcha()}
                             </div>
 
                             <div className="d-grid mb-3">
