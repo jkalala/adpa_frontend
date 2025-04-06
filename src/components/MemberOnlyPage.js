@@ -19,13 +19,25 @@ import {
   FiActivity, FiDollarSign, FiUsers, FiCalendar,
   FiFileText, FiBarChart2, FiGlobe, FiSettings,
   FiDownload, FiLogOut, FiUser, FiAlertCircle, FiMoon, FiSun,
-  FiHome, FiGrid, FiFolder, FiBook, FiClock, FiMenu, FiX
+  FiHome, FiGrid, FiFolder, FiBook, FiClock, FiMenu, FiX,
+  FiMessageSquare, FiCreditCard, FiBookmark
 } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import CountryStatus from  './member-portal/CountryStatus';
+
+// Import new components
+import MemberDirectory from './member-portal/MemberDirectory';
+import EventCalendar from './member-portal/EventCalendar';
+import ResourceLibrary from './member-portal/ResourceLibrary';
+import DiscussionForums from './member-portal/DiscussionForums';
+import MyMembership from './member-portal/MyMembership';
+import PaymentProcessing from './member-portal/PaymentProcessing';
+import MemberMenu from './member-portal/MemberMenu';
+
+// Import existing components
+import CountryStatus from './member-portal/CountryStatus';
 import FinancialReports from './member-portal/FinancialReports';
-import DocumentRepository from'./member-portal/DocumentRepository';
+import DocumentRepository from './member-portal/DocumentRepository';
 import CalendarEvents from './member-portal/CalendarEvents';
 import './MemberPortal.css'; // Custom CSS for modern styling
 
@@ -488,39 +500,53 @@ const MemberOnlyPage = () => {
           onClick={() => setActiveTab('dashboard')}
         />
         <NavCard 
-          title="Financials" 
-          icon={<FiDollarSign size={20} />} 
-          color="success"
-          active={activeTab === 'financial'}
-          onClick={() => setActiveTab('financial')}
-        />
-        <NavCard 
-          title="Membership" 
+          title="Member Directory" 
           icon={<FiUsers size={20} />} 
           color="info"
+          active={activeTab === 'directory'}
+          onClick={() => setActiveTab('directory')}
+        />
+        <NavCard 
+          title="Event Calendar" 
+          icon={<FiCalendar size={20} />} 
+          color="success"
+          active={activeTab === 'calendar'}
+          onClick={() => setActiveTab('calendar')}
+        />
+        <NavCard 
+          title="Resource Library" 
+          icon={<FiBook size={20} />} 
+          color="warning"
+          active={activeTab === 'resources'}
+          onClick={() => setActiveTab('resources')}
+        />
+        <NavCard 
+          title="Discussion Forums" 
+          icon={<FiMessageSquare size={20} />} 
+          color="danger"
+          active={activeTab === 'forums'}
+          onClick={() => setActiveTab('forums')}
+        />
+        <NavCard 
+          title="My Membership" 
+          icon={<FiUser size={20} />} 
+          color="secondary"
           active={activeTab === 'membership'}
           onClick={() => setActiveTab('membership')}
         />
         <NavCard 
-          title="Projects" 
-          icon={<FiGrid size={20} />} 
-          color="warning"
-          active={activeTab === 'projects'}
-          onClick={() => setActiveTab('projects')}
+          title="Payments" 
+          icon={<FiCreditCard size={20} />} 
+          color="primary"
+          active={activeTab === 'payments'}
+          onClick={() => setActiveTab('payments')}
         />
         <NavCard 
           title="Documents" 
           icon={<FiFolder size={20} />} 
-          color="secondary"
+          color="info"
           active={activeTab === 'documents'}
           onClick={() => setActiveTab('documents')}
-        />
-        <NavCard 
-          title="Calendar" 
-          icon={<FiClock size={20} />} 
-          color="danger"
-          active={activeTab === 'calendar'}
-          onClick={() => setActiveTab('calendar')}
         />
       </div>
     </nav>
@@ -575,32 +601,58 @@ const MemberOnlyPage = () => {
                 <Dashboard data={memberData} />
               </Tab.Pane>
               
-              <Tab.Pane eventKey="financial">
+              <Tab.Pane eventKey="directory">
                 <div className="section-container">
-                  <h2 className="page-title">Financial Reports</h2>
+                  <h2 className="page-title">Member Directory</h2>
                   <GlassCard>
-                    <FinancialReports 
-                      country={memberData?.country} 
-                      fiscalYear={memberData?.fiscalYear}
-                    />
+                    <MemberDirectory />
+                  </GlassCard>
+                </div>
+              </Tab.Pane>
+              
+              <Tab.Pane eventKey="calendar">
+                <div className="section-container">
+                  <h2 className="page-title">Event Calendar</h2>
+                  <GlassCard>
+                    <EventCalendar />
+                  </GlassCard>
+                </div>
+              </Tab.Pane>
+              
+              <Tab.Pane eventKey="resources">
+                <div className="section-container">
+                  <h2 className="page-title">Resource Library</h2>
+                  <GlassCard>
+                    <ResourceLibrary />
+                  </GlassCard>
+                </div>
+              </Tab.Pane>
+              
+              <Tab.Pane eventKey="forums">
+                <div className="section-container">
+                  <h2 className="page-title">Discussion Forums</h2>
+                  <GlassCard>
+                    <DiscussionForums />
                   </GlassCard>
                 </div>
               </Tab.Pane>
               
               <Tab.Pane eventKey="membership">
                 <div className="section-container">
-                  <h2 className="page-title">Membership Status</h2>
+                  <h2 className="page-title">My Membership</h2>
                   <GlassCard>
-                    <CountryStatus status={memberData?.membershipStatus} />
+                    <MyMembership />
                   </GlassCard>
                 </div>
               </Tab.Pane>
               
-              <Tab.Pane eventKey="projects">
-                <ProjectsTable 
-                  projects={memberData?.projects} 
-                  country={memberData?.country}
-                />
+              <Tab.Pane eventKey="payments">
+                <div className="section-container">
+                  <h2 className="page-title">Payment Processing</h2>
+                  <GlassCard>
+                    <PaymentProcessing />
+                  </GlassCard>
+                </div>
               </Tab.Pane>
               
               <Tab.Pane eventKey="documents">
@@ -609,18 +661,6 @@ const MemberOnlyPage = () => {
                   <GlassCard>
                     <DocumentRepository 
                       accessLevel={memberData?.accessLevel}
-                    />
-                  </GlassCard>
-                </div>
-              </Tab.Pane>
-              
-              <Tab.Pane eventKey="calendar">
-                <div className="section-container">
-                  <h2 className="page-title">Calendar Events</h2>
-                  <GlassCard>
-                    <CalendarEvents 
-                      country={memberData?.country} 
-                      region={memberData?.region}
                     />
                   </GlassCard>
                 </div>
