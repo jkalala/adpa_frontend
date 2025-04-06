@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Container, Form, Button, Alert, Card, FormCheck, Row, Col } from 'react-bootstrap';
 import { FiLogIn, FiMail, FiLock, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import styled from 'styled-components';
-import ReCAPTCHA from "react-google-recaptcha";
 
 // ========== STYLED COMPONENTS ==========
 const LoginCard = styled(Card)`
@@ -92,105 +91,145 @@ const Divider = styled.div`
   }
 `;
 
-// Create axios instance with base URL
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
-});
+// Create axios instance with interceptors
+const createApiClient = () => {
+  const instance = axios.create({
+    baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
+  });
 
-// Configure axios interceptors
-api.interceptors.request.use(
-  config => {
+  instance.interceptors.request.use(config => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-  },
-  error => Promise.reject(error)
-);
+  });
 
-api.interceptors.response.use(
-  response => response,
-  async error => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
+  instance.interceptors.response.use(
+    response => response,
+    error => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
+  );
+
+  return instance;
+};
+
+const api = createApiClient();
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [recaptchaValue, setRecaptchaValue] = useState(null);
-    const [recaptchaError, setRecaptchaError] = useState(false);
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+    const [state, setState] = useState({
+        error: '',
+        showPassword: false,
+        isLoading: false,
+        recaptchaValue: null,
+        recaptchaError: false,
+        recaptchaReady: false,
+    });
+    const recaptchaRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
 
-    const handleLogin = async (e) => {
+    const handleChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }, []);
+
+    const togglePasswordVisibility = useCallback(() => {
+        setState(prev => ({ ...prev, showPassword: !prev.showPassword }));
+    }, []);
+
+    useEffect(() => {
+        const loadRecaptcha = () => {
+            if (window.grecaptcha) {
+                setState(prev => ({ ...prev, recaptchaReady: true }));
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = `https://www.google.com/recaptcha/api.js?render=explicit`;
+            script.async = true;
+            script.defer = true;
+            
+            script.onload = () => {
+                if (window.grecaptcha) {
+                    setState(prev => ({ ...prev, recaptchaReady: true }));
+                } else {
+                    console.error('reCAPTCHA not available after script load');
+                    setState(prev => ({ ...prev, error: 'Security verification failed to load' }));
+                }
+            };
+            
+            script.onerror = () => {
+                console.error('Failed to load reCAPTCHA script');
+                setState(prev => ({ ...prev, error: 'Failed to load security verification' }));
+            };
+            
+            document.body.appendChild(script);
+            return () => document.body.removeChild(script);
+        };
+
+        loadRecaptcha();
+    }, []);
+
+    const handleLogin = useCallback(async (e) => {
         e.preventDefault();
         
-        if (!recaptchaValue && process.env.NODE_ENV === 'production') {
-            setRecaptchaError(true);
+        if (!state.recaptchaValue && process.env.NODE_ENV === 'production') {
+            setState(prev => ({ ...prev, recaptchaError: true }));
             return;
         }
 
-        setIsLoading(true);
-        setError('');
+        setState(prev => ({ ...prev, isLoading: true, error: '' }));
         
         try {
             const response = await api.post('/api/auth/login/', { 
-                email, 
-                password,
-                recaptcha_token: recaptchaValue 
+                email: formData.email, 
+                password: formData.password,
+                recaptcha_token: state.recaptchaValue 
             });
 
             const { access: accessToken, refresh: refreshToken } = response.data;
-
-            if (!accessToken) {
-                throw new Error('No access token received');
-            }
-
-            // Store tokens
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('refreshToken', refreshToken);
             
-            // Set axios defaults
-            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-
-            // Force state update before navigation
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
-            // Redirect to either the original path or /member-only
-            const redirectPath = location.state?.from?.pathname || '/member-only';
-            navigate(redirectPath, { replace: true });
+            navigate(location.state?.from?.pathname || '/member-only', { replace: true });
 
         } catch (err) {
-            console.error('Login error:', err);
-            setError(
-                err.response?.data?.detail || 
-                err.response?.data?.message || 
-                'Login failed. Please try again.'
-            );
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
+            setState(prev => ({
+                ...prev,
+                error: err.response?.data?.detail || 
+                      err.response?.data?.message || 
+                      'Login failed. Please try again.'
+            }));
+            
+            if (recaptchaRef.current) {
+                recaptchaRef.current.reset();
+            }
         } finally {
-            setIsLoading(false);
+            setState(prev => ({ ...prev, isLoading: false }));
         }
-    };
+    }, [formData.email, formData.password, state.recaptchaValue, navigate, location]);
 
-    const handleGoogleLogin = async () => {
+    const handleGoogleLogin = useCallback(async () => {
+        setState(prev => ({ ...prev, isLoading: true, error: '' }));
+
         try {
-            setIsLoading(true);
-            setError('');
-
             if (!window.google) {
-                throw new Error('Google authentication service not available');
+                const script = document.createElement('script');
+                script.src = 'https://accounts.google.com/gsi/client';
+                script.async = true;
+                script.defer = true;
+                document.body.appendChild(script);
+                throw new Error('Google authentication service loading...');
             }
 
             const client = window.google.accounts.oauth2.initTokenClient({
@@ -208,7 +247,6 @@ const Login = () => {
                         
                         localStorage.setItem('accessToken', res.data.access);
                         localStorage.setItem('refreshToken', res.data.refresh);
-                        api.defaults.headers.common['Authorization'] = `Bearer ${res.data.access}`;
                         navigate('/member-only', { replace: true });
                     } catch (err) {
                         throw new Error(err.response?.data?.error || 'Authentication failed');
@@ -218,45 +256,50 @@ const Login = () => {
             
             client.requestAccessToken();
         } catch (error) {
-            setError(error.message);
+            setState(prev => ({ ...prev, error: error.message }));
         } finally {
-            setIsLoading(false);
+            setState(prev => ({ ...prev, isLoading: false }));
         }
-    };
+    }, [navigate]);
 
-    const onRecaptchaChange = (value) => {
-        setRecaptchaValue(value);
-        setRecaptchaError(false);
-    };
+    const handleRecaptchaChange = useCallback((value) => {
+        setState(prev => ({ 
+            ...prev, 
+            recaptchaValue: value,
+            recaptchaError: false 
+        }));
+    }, []);
 
-    const renderRecaptcha = () => {
+    const renderRecaptcha = useCallback(() => {
+        if (!state.recaptchaReady) {
+            return (
+                <div className="text-muted small p-3 border rounded">
+                    Loading security verification...
+                </div>
+            );
+        }
+
         const sitekey = process.env.NODE_ENV === 'development' 
-            ? '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI' // Test key
+            ? '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
             : process.env.REACT_APP_RECAPTCHA_SITE_KEY;
 
         if (!sitekey) {
-            console.error('reCAPTCHA site key is missing');
             return (
-                <Alert variant="warning" className="text-center small">
-                    Security verification is currently unavailable
-                </Alert>
+                <div className="text-danger small">
+                    reCAPTCHA configuration error
+                </div>
             );
         }
 
         return (
-            <>
-                <ReCAPTCHA
-                    sitekey={sitekey}
-                    onChange={onRecaptchaChange}
-                />
-                {recaptchaError && (
-                    <div className="text-danger small mt-1">
-                        Please verify you're not a robot
-                    </div>
-                )}
-            </>
+            <div 
+                className="g-recaptcha" 
+                data-sitekey={sitekey}
+                ref={recaptchaRef}
+                onChange={handleRecaptchaChange}
+            />
         );
-    };
+    }, [state.recaptchaReady, handleRecaptchaChange]);
 
     return (
         <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
@@ -270,19 +313,19 @@ const Login = () => {
                             </p>
                         </div>
 
-                        {error && (
+                        {state.error && (
                             <Alert variant="danger" className="text-center">
                                 <FiAlertCircle className="me-2" />
-                                {error}
+                                {state.error}
                             </Alert>
                         )}
 
                         <div className="d-grid mb-3">
                             <GoogleButton 
                                 onClick={handleGoogleLogin} 
-                                disabled={isLoading}
+                                disabled={state.isLoading}
                             >
-                                {isLoading ? (
+                                {state.isLoading ? (
                                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                                 ) : (
                                     <>
@@ -306,9 +349,10 @@ const Login = () => {
                                     <FormIcon><FiMail /></FormIcon>
                                     <Form.Control
                                         type="email"
+                                        name="email"
                                         placeholder="your@email.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        value={formData.email}
+                                        onChange={handleChange}
                                         required
                                         style={{ paddingLeft: '40px', height: '48px' }}
                                         className="rounded-pill border-0 bg-light"
@@ -323,16 +367,17 @@ const Login = () => {
                                 <div className="position-relative">
                                     <FormIcon><FiLock /></FormIcon>
                                     <Form.Control
-                                        type={showPassword ? "text" : "password"}
+                                        type={state.showPassword ? "text" : "password"}
+                                        name="password"
                                         placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        value={formData.password}
+                                        onChange={handleChange}
                                         required
                                         style={{ paddingLeft: '40px', height: '48px' }}
                                         className="rounded-pill border-0 bg-light"
                                     />
-                                    <PasswordToggle onClick={() => setShowPassword(!showPassword)}>
-                                        {showPassword ? <FiEyeOff /> : <FiEye />}
+                                    <PasswordToggle onClick={togglePasswordVisibility}>
+                                        {state.showPassword ? <FiEyeOff /> : <FiEye />}
                                     </PasswordToggle>
                                 </div>
                             </Form.Group>
@@ -350,26 +395,25 @@ const Login = () => {
 
                             <div className="mb-3">
                                 {renderRecaptcha()}
+                                {state.recaptchaError && (
+                                    <div className="text-danger small mt-2">
+                                        Please complete the security verification
+                                    </div>
+                                )}
                             </div>
 
                             <div className="d-grid mb-3">
-                                <LoginButton type="submit" disabled={isLoading}>
-                                    {isLoading ? (
+                                <LoginButton 
+                                    type="submit" 
+                                    disabled={state.isLoading || (!state.recaptchaValue && process.env.NODE_ENV === 'production')}
+                                >
+                                    {state.isLoading ? (
                                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                                     ) : (
                                         <FiLogIn className="me-2" />
                                     )}
                                     Sign In
                                 </LoginButton>
-                            </div>
-
-                            <div className="text-center mt-4">
-                                <p className="small text-muted">
-                                    Don't have an account?{' '}
-                                    <a href="/register" className="text-decoration-none fw-bold">
-                                        Request access
-                                    </a>
-                                </p>
                             </div>
                         </Form>
                     </LoginCard>
@@ -379,4 +423,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default React.memo(Login);

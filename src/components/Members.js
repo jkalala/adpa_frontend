@@ -68,10 +68,6 @@ const CardHeader = styled.div`
     margin: 0;
     display: flex;
     align-items: center;
-
-    svg {
-      margin-right: 0.75rem;
-    }
   }
 
   .badge {
@@ -202,7 +198,10 @@ const Members = () => {
   return (
     <MembersContainer>
       <SectionHeader>
-        <h2>ADPA Membership</h2>
+        <h2>
+          <FiFlag style={{ marginRight: '0.75rem' }} />
+          ADPA Membership
+        </h2>
         <p>
           Uniting African diamond-producing nations to foster sustainable development 
           and ethical practices in the diamond industry
@@ -213,15 +212,18 @@ const Members = () => {
         <Col lg={6} className="mb-4 mb-lg-0">
           <MemberCard>
             <CardHeader primary>
-              <h3><FiFlag /> Member Countries</h3>
+              <h3>
+                <FiFlag style={{ marginRight: '0.75rem' }} />
+                Member Countries
+              </h3>
               <span className="badge">{memberCountries.length} Countries</span>
             </CardHeader>
             <Card.Body>
-              <p className="text-muted mb-4">
+              <div className="text-muted mb-4">
                 Effective members are African diamond-producing countries that have 
                 ratified the ADPA Statute and comply with the Kimberley Process 
                 Certification Scheme requirements.
-              </p>
+              </div>
               <div className="country-list">
                 {memberCountries.map((country) => (
                   <CountryItem key={country.code}>
@@ -242,18 +244,18 @@ const Members = () => {
         <Col lg={6}>
           <MemberCard>
             <CardHeader>
-              <h3><FiFlag /> Observers</h3>
+              <h3>
+                <FiFlag style={{ marginRight: '0.75rem' }} />
+                Observers
+              </h3>
               <span className="badge">{observerCountries.length} Countries</span>
             </CardHeader>
             <Card.Body>
-              <p className="text-muted mb-4">
-              <ul>
-                <li><strong>Potential African Diamond Producers:</strong> Nations with geological diamond resources aiming for future production.</li>
-                <li><strong>Non-Compliant African Producers:</strong> Countries currently producing diamonds but not meeting Kimberley Process standards.</li>
-               <li><strong>Global Diamond Value Chain Participants:</strong> Non-African countries and organizations aligned with the Kimberley Process's statutes and regulations.</li>
-              </ul>
-
-              </p>
+              <div className="text-muted mb-4">
+                <div><strong>Potential African Diamond Producers:</strong> Nations with geological diamond resources aiming for future production.</div>
+                <div><strong>Non-Compliant African Producers:</strong> Countries currently producing diamonds but not meeting Kimberley Process standards.</div>
+                <div><strong>Global Diamond Value Chain Participants:</strong> Non-African countries and organizations aligned with the Kimberley Process's statutes and regulations.</div>
+              </div>
               <h6 className="font-weight-bold mb-3">Current Observers:</h6>
               <div className="country-list">
                 {observerCountries.map((country) => (
