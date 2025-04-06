@@ -1,7 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import styled, { keyframes } from 'styled-components';
-import { FiClock, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
+import { FiClock, FiAlertCircle, FiRefreshCw, FiX } from 'react-icons/fi';
+
+// Animation keyframes
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const shimmer = keyframes`
+  0% { background-position: -468px 0 }
+  100% { background-position: 468px 0 }
+`;
 
 // Styled Components
 const NewsContainer = styled.div`
@@ -197,11 +208,6 @@ const RefreshButton = styled.button`
   }
 `;
 
-const shimmer = keyframes`
-  0% { background-position: -468px 0 }
-  100% { background-position: 468px 0 }
-`;
-
 const LoadingPlaceholder = styled.div`
   background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
   background-size: 800px 104px;
@@ -222,12 +228,108 @@ const LoadingImagePlaceholder = styled.div`
   animation: ${shimmer} 1.5s infinite linear;
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 2rem;
+  overflow-y: auto;
+`;
+
+const ModalContent = styled.div`
+  background-color: white;
+  border-radius: 16px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: ${fadeIn} 0.3s ease-out;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+`;
+
+const ModalHeader = styled.div`
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+`;
+
+const ModalCloseButton = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #f3f4f6;
+    color: #1a1a1a;
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: 1.5rem;
+`;
+
+const ModalImage = styled.img`
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+`;
+
+const ModalDate = styled.div`
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+
+  svg {
+    margin-right: 0.5rem;
+  }
+`;
+
+const ModalText = styled.div`
+  color: #4b5563;
+  line-height: 1.8;
+  font-size: 1.05rem;
+
+  p {
+    margin-bottom: 1.5rem;
+  }
+`;
+
 const News = () => {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedArticleId, setExpandedArticleId] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [modalArticle, setModalArticle] = useState(null);
   const scrollerRef = useRef(null);
   const articleRefs = useRef([]);
 
@@ -314,6 +416,16 @@ const News = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openModal = (article) => {
+    setModalArticle(article);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeModal = () => {
+    setModalArticle(null);
+    document.body.style.overflow = 'auto';
   };
 
   useEffect(() => {
@@ -433,10 +545,10 @@ const News = () => {
                 </ArticleContent>
 
                 <ReadMoreButton 
-                  onClick={() => toggleExpand(article.id, index)}
+                  onClick={() => openModal(article)}
                   aria-controls={`article-${article.id}`}
                 >
-                  {isExpanded ? 'Show Less' : 'Read More'}
+                  Read More
                 </ReadMoreButton>
               </NewsArticle>
             );
@@ -456,6 +568,43 @@ const News = () => {
             </NavButton>
           ))}
         </NavigationControls>
+      )}
+
+      {/* News Modal */}
+      {modalArticle && (
+        <ModalOverlay onClick={closeModal}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>{modalArticle.title}</ModalTitle>
+              <ModalCloseButton onClick={closeModal}>
+                <FiX />
+              </ModalCloseButton>
+            </ModalHeader>
+            <ModalBody>
+              {modalArticle.image && (
+                <ModalImage
+                  src={modalArticle.image.includes('http') ? modalArticle.image : `http://localhost:1337${modalArticle.image}`}
+                  alt={modalArticle.title}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              )}
+              <ModalDate>
+                <FiClock /> {new Date(modalArticle.publishedAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </ModalDate>
+              <ModalText>
+                {modalArticle.textContent.map((paragraph, i) => (
+                  <p key={i}>{paragraph}</p>
+                ))}
+              </ModalText>
+            </ModalBody>
+          </ModalContent>
+        </ModalOverlay>
       )}
     </NewsContainer>
   );

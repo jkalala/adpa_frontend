@@ -1,3 +1,19 @@
+/**
+ * ADPA Navigation Bar Component
+ * 
+ * This component provides the main navigation for the ADPA application with:
+ * - Responsive design for all screen sizes
+ * - Authentication-aware menu items
+ * - Notification indicators
+ * - Smooth animations and transitions
+ * 
+ * Features:
+ * - Mobile-friendly collapsible menu
+ * - User dropdown with profile options
+ * - Active link highlighting
+ * - Member-specific dashboard access
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/ADPA_LOGO_1.png';
@@ -15,10 +31,16 @@ import styled from 'styled-components';
 import { FiUser, FiChevronDown, FiExternalLink, FiBell, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../auth/authProvider';
 
-// Google Font import
+// Google Font import for consistent typography
 const fontFamily = "'Roboto', sans-serif";
 
-// Styled Components
+// =============================================
+// STYLED COMPONENTS
+// =============================================
+
+/**
+ * Custom styled navbar with shadow and responsive padding
+ */
 const StyledNavbar = styled(BootstrapNavbar)`
   background-color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -32,16 +54,22 @@ const StyledNavbar = styled(BootstrapNavbar)`
   }
 `;
 
+/**
+ * Logo image with responsive sizing
+ */
 const NavLogo = styled.img`
-  height: 50px;
+  height: 60px;
   width: auto;
   transition: all 0.3s ease;
 
   @media (min-width: 992px) {
-    height: 60px;
+    height: 80px;
   }
 `;
 
+/**
+ * Navigation link styling with hover and active states
+ */
 const NavLink = styled(Nav.Link)`
   color: #1a1a2e !important;
   font-weight: 500;
@@ -65,6 +93,9 @@ const NavLink = styled(Nav.Link)`
   }
 `;
 
+/**
+ * Notification badge styling for alerts
+ */
 const NotificationBadge = styled(Badge)`
   position: absolute;
   top: 5px;
@@ -73,6 +104,9 @@ const NotificationBadge = styled(Badge)`
   padding: 0.25em 0.4em;
 `;
 
+/**
+ * Member portal button with hover effects
+ */
 const MemberPortalButton = styled(Link)`
   background: white !important;
   color: #1a1a2e !important;
@@ -95,6 +129,9 @@ const MemberPortalButton = styled(Link)`
   }
 `;
 
+/**
+ * Custom user dropdown toggle without caret
+ */
 const UserDropdownToggle = styled(DropdownToggle)`
   display: flex;
   align-items: center;
@@ -117,6 +154,9 @@ const UserDropdownToggle = styled(DropdownToggle)`
   }
 `;
 
+/**
+ * Styled dropdown menu with consistent theming
+ */
 const StyledDropdownMenu = styled(DropdownMenu)`
   background-color: white;
   border: 1px solid #e0e0e0;
@@ -153,6 +193,9 @@ const StyledDropdownMenu = styled(DropdownMenu)`
   }
 `;
 
+/**
+ * Custom nav dropdown with removed caret indicator
+ */
 const CustomNavDropdown = styled(NavDropdown)`
   .dropdown-toggle {
     &:after {
@@ -165,17 +208,66 @@ const CustomNavDropdown = styled(NavDropdown)`
     font-size: 0.9rem;
     text-transform: capitalize;
   }
+  
+  /* Ensure the dropdown toggle has the same styling as NavLink */
+  .nav-link {
+    color: #1a1a2e !important;
+    font-weight: 500;
+    padding: 0.75rem 1rem !important;
+    margin: 0 0.25rem;
+    position: relative;
+    transition: all 0.2s ease;
+    text-decoration: none !important;
+    font-family: ${fontFamily};
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    text-transform: capitalize;
+    display: flex;
+    align-items: center;
+    
+    &:hover {
+      color: #4cc9f0 !important;
+    }
+    
+    &.active {
+      color: #4cc9f0 !important;
+      font-weight: 600;
+    }
+  }
 `;
 
-const Navbar = () => {
-  const [expanded, setExpanded] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
-  const { user, isLoading, logout } = useAuth();
-  const navigate = useNavigate();
+/**
+ * Styled navigation container for better alignment
+ */
+const NavContainer = styled(Nav)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
+  @media (max-width: 991.98px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+// =============================================
+// MAIN COMPONENT
+// =============================================
+
+const Navbar = () => {
+  // Component state
+  const [expanded, setExpanded] = useState(false); // Controls mobile menu toggle
+  const [scrolled, setScrolled] = useState(false); // Tracks scroll position for styling
+  const location = useLocation(); // Current route location
+  const { user, isLoading, logout } = useAuth(); // Authentication context
+  const navigate = useNavigate(); // Navigation function
+  
+  // TODO: Replace with real notification count from API
   const [notificationCount] = useState(user ? 3 : 0);
 
+  /**
+   * Effect to handle scroll events for navbar styling
+   */
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
@@ -184,16 +276,23 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  /**
+   * Closes the mobile navigation menu
+   */
   const closeNavbar = () => {
     setExpanded(false);
   };
 
+  /**
+   * Handles user logout flow
+   */
   const handleLogout = () => {
     logout();
     closeNavbar();
     navigate('/login');
   };
 
+  // Show loading spinner while auth state is being checked
   if (isLoading) {
     return (
       <div style={{ height: '56px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -205,12 +304,15 @@ const Navbar = () => {
   return (
     <StyledNavbar expand="lg" expanded={expanded} className={scrolled ? 'scrolled' : ''}>
       <Container>
+        {/* Brand/Logo */}
         <BootstrapNavbar.Brand as={Link} to="/" onClick={closeNavbar}>
           <NavLogo src={logo} alt="ADPA Logo" />
         </BootstrapNavbar.Brand>
         
+        {/* Mobile Toggle Button */}
         <BootstrapNavbar.Toggle onClick={() => setExpanded(!expanded)} />
         
+        {/* Collapsible Menu Content */}
         <BootstrapNavbar.Collapse id="navbar-collapse">
           {/* Mobile-only Dashboard link for members */}
           {user?.is_member && expanded && (
@@ -231,11 +333,13 @@ const Navbar = () => {
             </Nav>
           )}
           
-          <Nav className="me-auto">
+          {/* Main Navigation Links */}
+          <NavContainer className="me-auto">
             <NavLink as={Link} to="/" onClick={closeNavbar} active={location.pathname === '/'}>
               Home
             </NavLink>
             
+            {/* About Dropdown */}
             <CustomNavDropdown
               title={
                 <span className="d-flex align-items-center">
@@ -295,10 +399,12 @@ const Navbar = () => {
             <NavLink as={Link} to="/gallery" onClick={closeNavbar} active={location.pathname === '/gallery'}>
               Gallery
             </NavLink>
-          </Nav>
+          </NavContainer>
           
+          {/* User Section */}
           <Nav>
             {user ? (
+              /* Authenticated User Dropdown */
               <NavDropdown
                 title={
                   <UserDropdownToggle as="div">
@@ -341,8 +447,8 @@ const Navbar = () => {
                 </StyledDropdownMenu>
               </NavDropdown>
             ) : (
+              /* Login Button for Guests */
               <MemberPortalButton to="/login" onClick={closeNavbar}>
-                
                 <FiUser className="me-1" /> Member portal
               </MemberPortalButton>
             )}

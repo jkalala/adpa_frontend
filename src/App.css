@@ -1,38 +1,145 @@
+/* 
+ * Main Application Styles
+ * 
+ * This stylesheet contains global styles for the React application,
+ * including layout, animations, and map-related styles.
+ */
+
+/* ====================
+   Core Application Styles 
+   ==================== */
+
+/* Center-align all text in the application container */
 .App {
   text-align: center;
 }
 
+/* Logo styling - typically used for the main app logo */
 .App-logo {
-  height: 40vmin;
-  pointer-events: none;
+  height: 40vmin; /* Responsive size based on viewport */
+  pointer-events: none; /* Prevent interaction with the logo */
 }
 
+/* 
+ * Animation for the app logo 
+ * Only applies if user hasn't prefers reduced motion
+ */
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+    animation: App-logo-spin infinite 20s linear; /* Continuous rotation */
   }
 }
 
+/* 
+ * App header styling - typically the main header section
+ * Dark background with centered content
+ */
 .App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+  background-color: #282c34; /* Dark background */
+  min-height: 100vh; /* Full viewport height */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  font-size: calc(10px + 2vmin); /* Responsive font size */
+  color: white; /* Light text */
 }
 
+/* Styling for links within the app */
 .App-link {
-  color: #61dafb;
+  color: #61dafb; /* Light blue color */
 }
 
+/* 
+ * Keyframes for logo spin animation 
+ * Creates a continuous 360 degree rotation
+ */
 @keyframes App-logo-spin {
   from {
-    transform: rotate(0deg);
+    transform: rotate(0deg); /* Start at 0 degrees */
   }
   to {
-    transform: rotate(360deg);
+    transform: rotate(360deg); /* End at 360 degrees */
   }
+}
+
+/* ====================
+   Leaflet Map Styles 
+   ==================== */
+
+/* Base container for Leaflet maps */
+.leaflet-container {
+  background: #f8f9fa; /* Light gray background */
+  z-index: 1; /* Ensure proper stacking */
+  height: 100%; /* Full height of parent */
+  width: 100%; /* Full width of parent */
+  min-height: 400px; /* Minimum height to ensure visibility */
+}
+
+/* Map popup styling - used for location markers */
+.map-popup {
+  min-width: 180px; /* Minimum width for content */
+}
+
+/* Header styling within map popups */
+.map-popup h6 {
+  margin-bottom: 0; /* Remove default margin */
+  color: #333; /* Dark gray text */
+}
+
+/* Status indicator dot - used for showing status colors */
+.status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%; /* Circular shape */
+  margin-right: 6px; /* Spacing between indicator and text */
+}
+
+/* Content padding within Leaflet popups */
+.leaflet-popup-content {
+  margin: 12px; /* Consistent spacing */
+}
+
+/* ====================
+   Member Map Specific Styles 
+   ==================== */
+
+/* Container for member maps */
+.member-map-container {
+  border-radius: 0.5rem; /* Rounded corners */
+  overflow: hidden; /* Ensure content stays within bounds */
+}
+
+/* Enhanced popup content styling */
+.map-popup-content {
+  min-width: 180px; /* Minimum width for content */
+}
+
+/* Header styling within enhanced popups */
+.map-popup-content h6 {
+  margin-bottom: 0; /* Remove default margin */
+  color: #333; /* Dark gray text */
+}
+
+/* Loading overlay for maps */
+.map-loading-overlay {
+  position: absolute; /* Cover entire map */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7); /* Semi-transparent white */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2; /* Above the map */
+}
+
+/* Error message styling for maps */
+.map-error {
+  padding: 20px; /* Adequate spacing */
+  color: #721c24; /* Dark red text */
+  background-color: #f8d7da; /* Light red background */
+  border: 1px solid #f5c6cb; /* Border color */
 }

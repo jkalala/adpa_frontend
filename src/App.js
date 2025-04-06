@@ -1,7 +1,20 @@
+/**
+ * Main Application Component
+ * 
+ * This component serves as the root of the React application, handling:
+ * - Routing configuration for all pages
+ * - Authentication state management
+ * - Token validation and interception
+ * - Protected route setup
+ * - Global layout (navbar and footer)
+ */
+
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import axios from 'axios';
+
+// Component imports organized by category
 import Home from './components/Home';
 import MemberDashboard from './components/MemberDashboard';
 import About from './components/About';
@@ -14,38 +27,66 @@ import Career from './components/Career';
 import Contact from './components/Contact';
 import Documents from './components/Documents';
 import ExternalLinks from './components/ExternalLinks';
+
+// Authentication-related components
 import Login from './components/Login';
 import PasswordRecovery from './components/PasswordRecovery';
 import ForgotPassword from './components/ForgotPassword';
 import RequestAccess from './components/Register';
 import MemberOnlyPage from './components/MemberOnlyPage';
+import PasswordReset from './components/PasswordReset';
+
+// Layout components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import PasswordReset from './components/PasswordReset';
+
+// Authentication providers and utilities
 import { AuthProvider } from './auth/authProvider';
 import ProtectedRoute from './auth/protectedRoute';
 
 function App() {
-  // Token validation and axios interceptor setup
+  /**
+   * Authentication and Token Management Effect
+   * 
+   * This useEffect hook handles:
+   * 1. Token validation on initial app load
+   * 2. Axios response interceptor for handling 401 unauthorized responses
+   * 3. Cleanup of interceptors when component unmounts
+   */
   useEffect(() => {
-    // Check token validity on app load
+    /**
+     * Checks the validity of the stored authentication token
+     * - Retrieves token from localStorage
+     * - Validates token (placeholder implementation)
+     * - Clears invalid/expired tokens
+     */
     const checkAuth = () => {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        // Add your token validation logic here
-        // For example: check expiration or verify with backend
-        const isExpired = false; // Replace with actual validation
+        // TODO: Implement actual token validation logic
+        // Example: Check expiration or verify with backend
+        const isExpired = false; // Placeholder - replace with real validation
+        
         if (isExpired) {
           localStorage.removeItem('accessToken');
+          // Optional: Redirect to login or show session expired message
         }
       }
     };
 
-    // Response interceptor for 401 errors
+    /**
+     * Axios Response Interceptor
+     * 
+     * Handles 401 Unauthorized responses by:
+     * 1. Clearing invalid tokens
+     * 2. Redirecting to login page
+     * 3. Passing through all other errors
+     */
     const interceptor = axios.interceptors.response.use(
-      response => response,
+      response => response, // Pass through successful responses
       error => {
         if (error.response?.status === 401) {
+          // Handle unauthorized access
           localStorage.removeItem('accessToken');
           window.location.href = '/login';
         }
@@ -53,20 +94,27 @@ function App() {
       }
     );
 
+    // Run initial auth check
     checkAuth();
 
-    // Cleanup interceptor on unmount
+    // Cleanup function to remove interceptor when component unmounts
     return () => {
       axios.interceptors.response.eject(interceptor);
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only on mount/unmount
 
   return (
     <Router>
+      {/* AuthProvider makes authentication state available to all child components */}
       <AuthProvider>
+        {/* Global layout components */}
         <Navbar />
+        
+        {/* Main application routes */}
         <Routes>
-          {/* Public routes */}
+          {/* ==================== */}
+          {/* Public Routes */}
+          {/* ==================== */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/password-recovery" element={<PasswordRecovery />} />
@@ -81,18 +129,28 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/external-links" element={<ExternalLinks />} />
           <Route path="/documents" element={<Documents />} />
+          <Route path="/members" element={<Members />} />
+          
+          {/* Password reset with token parameter */}
           <Route path="/password-reset/:token" element={<PasswordReset />} />
 
-          {/* Protected routes */}
+          {/* ==================== */}
+          {/* Protected Routes */}
+          {/* ==================== */}
+          {/* Wrapped in ProtectedRoute which checks authentication */}
           <Route element={<ProtectedRoute />}>
             <Route path="/member-only" element={<MemberOnlyPage />} />
             <Route path="/member-dashboard" element={<MemberDashboard />} />
-            <Route path="/members" element={<Members />} />
           </Route>
 
-          {/* Fallback route */}
+          {/* ==================== */}
+          {/* Fallback Route */}
+          {/* ==================== */}
+          {/* Handles undefined routes by redirecting to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        {/* Global footer */}
         <Footer />
       </AuthProvider>
     </Router>

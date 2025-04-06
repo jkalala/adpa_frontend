@@ -1,98 +1,448 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Row, Col, Button, Spinner, Alert } from 'react-bootstrap';
-import styled from 'styled-components';
-import { FiFilter, FiX, FiZoomIn, FiRefreshCw, FiUpload, FiImage } from 'react-icons/fi';
-import Lightbox from 'react-image-lightbox';
-import 'react-image-lightbox/style.css';
+import { Container, Row, Col, Button, Spinner, Alert, Badge, Modal } from 'react-bootstrap';
+import { FiZoomIn, FiRefreshCw, FiExternalLink, FiFilter, FiX } from 'react-icons/fi';
+import styled, { keyframes } from 'styled-components';
+
+// Animation keyframes
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const scaleIn = keyframes`
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+`;
+
+const shimmer = keyframes`
+  0% { background-position: -468px 0 }
+  100% { background-position: 468px 0 }
+`;
 
 // Styled Components
-const GalleryContainer = styled(Container)`
-  padding: 4rem 0;
-  min-height: 70vh;
+const GalleryContainer = styled.div`
+  padding: 3rem 0;
+  animation: ${fadeIn} 0.8s ease-out;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 15px;
+  padding-right: 15px;
 `;
 
-const EmptyStateContainer = styled.div`
+const GalleryHeader = styled.div`
   text-align: center;
-  padding: 3rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  margin-top: 2rem;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
+  margin-bottom: 3rem;
+  
+  h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 1rem;
+    position: relative;
+    display: inline-block;
+    
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: linear-gradient(90deg, #4cc9f0, #4361ee);
+      border-radius: 2px;
+    }
+  }
+  
+  p {
+    color: #6c757d;
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
 `;
 
-const AdminGuide = styled.div`
-  background: #f0f8ff;
-  border-left: 4px solid #1a1a2e;
+const FilterContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+
+const FilterButton = styled.button`
+  background: ${props => props.active ? 'linear-gradient(135deg, #4cc9f0, #4361ee)' : '#f8f9fa'};
+  color: ${props => props.active ? 'white' : '#495057'};
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 50px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: ${props => props.active ? '0 4px 10px rgba(76, 201, 240, 0.3)' : 'none'};
+  
+  &:hover {
+    background: ${props => props.active ? 'linear-gradient(135deg, #3ab8df, #3250d4)' : '#e9ecef'};
+    color: ${props => props.active ? 'white' : '#212529'};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  &:focus {
+    box-shadow: 0 0 0 0.25rem rgba(76, 201, 240, 0.25);
+    outline: none;
+  }
+`;
+
+const GalleryGrid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -0.75rem;
+`;
+
+const GalleryItem = styled.div`
+  padding: 0.75rem;
+  animation: ${scaleIn} 0.5s ease-out;
+  animation-fill-mode: both;
+  animation-delay: ${props => props.index * 0.1}s;
+  width: ${props => {
+    if (props.xs) return '50%';
+    if (props.md) return '33.333333%';
+    if (props.lg) return '25%';
+    return '100%';
+  }};
+  
+  @media (max-width: 767.98px) {
+    width: 50%;
+  }
+  
+  @media (min-width: 768px) and (max-width: 991.98px) {
+    width: 33.333333%;
+  }
+  
+  @media (min-width: 992px) {
+    width: 25%;
+  }
+`;
+
+const ImageCard = styled.div`
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  background: white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    
+    .image-overlay {
+      opacity: 1;
+    }
+    
+    .image-container img {
+      transform: scale(1.05);
+    }
+  }
+`;
+
+const ImageContainer = styled.div`
+  position: relative;
+  padding-top: 100%;
+  overflow: hidden;
+  
+  img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+`;
+
+const ImageOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  
+  .zoom-icon {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0.8);
+    transition: all 0.3s ease;
+    
+    svg {
+      color: white;
+      font-size: 1.5rem;
+    }
+  }
+  
+  &:hover .zoom-icon {
+    transform: scale(1);
+  }
+`;
+
+const ImageInfo = styled.div`
+  padding: 1.25rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  
+  h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1a1a2e;
+  }
+  
+  .badge {
+    align-self: flex-start;
+    background: linear-gradient(135deg, #4cc9f0, #4361ee);
+    border: none;
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+  }
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  
+  .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #4cc9f0;
+  }
+  
+  p {
+    margin-top: 1rem;
+    color: #6c757d;
+    font-size: 1.1rem;
+  }
+`;
+
+const ErrorContainer = styled.div`
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   padding: 1.5rem;
-  margin-top: 2rem;
-  text-align: left;
-  border-radius: 4px;
+  background-color: #f8d7da;
+  color: #842029;
+  
+  h4 {
+    color: #dc3545;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+  
+  pre {
+    white-space: pre-wrap;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border: 1px solid #e9ecef;
+  }
+  
+  .btn {
+    border-radius: 50px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 500;
+    
+    &.btn-primary {
+      background: linear-gradient(135deg, #4cc9f0, #4361ee);
+      border: none;
+      
+      &:hover {
+        background: linear-gradient(135deg, #3ab8df, #3250d4);
+      }
+    }
+  }
+`;
+
+const StyledBadge = styled.span`
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.25rem;
+  background: linear-gradient(135deg, #4cc9f0, #4361ee);
+  color: white;
+  text-transform: capitalize;
 `;
 
 const Gallery = () => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('all');
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [isOpen, setIsOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [filteredImages, setFilteredImages] = useState([]);
 
+  // Strapi API configuration
   const API_BASE_URL = 'http://localhost:1337';
-  const API_URL = `${API_BASE_URL}/api`;
+  const API_URL = `${API_BASE_URL}/api/galleries`;
 
   const fetchImages = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Verify server connection
+      // First verify Strapi is running
       try {
-        await axios.get(API_BASE_URL, { timeout: 3000 });
-      } catch (healthError) {
-        throw new Error(`Cannot connect to Strapi at ${API_BASE_URL}`);
+        await axios.get(API_BASE_URL);
+      } catch (err) {
+        throw new Error(`Cannot connect to Strapi server at ${API_BASE_URL}. Make sure:
+        - Strapi server is running
+        - The URL is correct
+        - No CORS issues exist (check browser console)`);
       }
 
-      // Fetch gallery data
-      const response = await axios.get(`${API_URL}/galleries?populate=*`);
+      // Fetch gallery data with proper population
+      const response = await axios.get(API_URL, {
+        params: {
+          populate: {
+            image: { populate: '*' },
+            thumbnail: { populate: '*' }
+          }
+        }
+      });
 
       if (!response.data?.data) {
-        throw new Error('Invalid API response structure');
+        throw new Error('API returned invalid data structure');
       }
 
-      // Process only items with valid image data
-      const formattedImages = response.data.data
-        .filter(item => {
-          const hasImage = item.attributes?.image?.data?.attributes?.url;
-          const hasThumbnail = item.attributes?.thumbnail?.data?.attributes?.url;
-          return hasImage || hasThumbnail;
-        })
-        .map(item => {
-          const imageData = item.attributes.image?.data?.attributes || 
-                          item.attributes.thumbnail?.data?.attributes;
-
-          return {
-            id: item.id,
-            title: item.attributes.titlephoto || 'Untitled',
-            imageUrl: `${API_BASE_URL}${imageData.url}`,
-            thumbnailUrl: imageData.formats?.thumbnail?.url 
-              ? `${API_BASE_URL}${imageData.formats.thumbnail.url}`
-              : `${API_BASE_URL}${imageData.url}`,
-            category: item.attributes.category || 'uncategorized',
-            description: item.attributes.description?.[0]?.children?.[0]?.text || '',
-            date: item.attributes.date || ''
-          };
-        });
-
-      setImages(formattedImages);
+      // Process gallery items
+      console.log('API Response:', JSON.stringify(response.data, null, 2));
       
-      if (formattedImages.length === 0) {
-        setError('No gallery items with images found. Please upload images in Strapi admin.');
+      const processedImages = response.data.data.map(item => {
+        try {
+          console.log('Processing item:', JSON.stringify(item, null, 2));
+          
+          // Check if we have the expected structure
+          if (!item) {
+            console.warn('Item is null or undefined');
+            return null;
+          }
+          
+          // Get the first available image source
+          const imageData = item.image;
+          const thumbnailData = item.thumbnail;
+          
+          console.log('Image data:', JSON.stringify(imageData, null, 2));
+          console.log('Thumbnail data:', JSON.stringify(thumbnailData, null, 2));
+          
+          // Get the first available media source
+          const mediaSource = imageData || thumbnailData;
+          
+          if (!mediaSource?.url) {
+            console.warn(`No valid image found for item ${item.id}`);
+            return null;
+          }
+          
+          // Construct URLs - handles both local and absolute paths
+          const imageUrl = mediaSource.url.startsWith('http')
+            ? mediaSource.url
+            : `${API_BASE_URL}${mediaSource.url.startsWith('/') ? '' : '/'}${mediaSource.url}`;
+          
+          console.log('Image URL:', imageUrl);
+          
+          // Get thumbnail URL
+          let thumbnailUrl = imageUrl;
+          
+          // Try to get thumbnail from formats
+          if (mediaSource.formats?.thumbnail?.url) {
+            thumbnailUrl = mediaSource.formats.thumbnail.url.startsWith('http')
+              ? mediaSource.formats.thumbnail.url
+              : `${API_BASE_URL}${mediaSource.formats.thumbnail.url.startsWith('/') ? '' : '/'}${mediaSource.formats.thumbnail.url}`;
+            console.log('Thumbnail URL from formats:', thumbnailUrl);
+          }
+          
+          // If we have a separate thumbnail, use that
+          if (thumbnailData?.url) {
+            thumbnailUrl = thumbnailData.url.startsWith('http')
+              ? thumbnailData.url
+              : `${API_BASE_URL}${thumbnailData.url.startsWith('/') ? '' : '/'}${thumbnailData.url}`;
+            console.log('Thumbnail URL from separate thumbnail:', thumbnailUrl);
+          }
+          
+          const result = {
+            id: item.id,
+            title: item.titlephoto || `Image ${item.id}`,
+            imageUrl,
+            thumbnailUrl,
+            category: item.category || 'general',
+            description: item.description?.[0]?.children?.[0]?.text || '',
+            date: item.date || ''
+          };
+          
+          console.log('Processed result:', result);
+          return result;
+        } catch (err) {
+          console.error(`Error processing item ${item?.id || 'unknown'}:`, err);
+          return null;
+        }
+      }).filter(Boolean);
+      
+      console.log('Final processed images:', processedImages);
+
+      if (processedImages.length === 0) {
+        throw new Error(`
+          Gallery loaded but no images displayed. Please verify:
+
+          1. MEDIA FIELDS:
+             - Go to Content Manager → Gallery
+             - Edit each item and ensure either:
+               * 'image' field has a media file, or
+               * 'thumbnail' field has a media file
+             - Click "Save" then "Publish"
+
+          2. PERMISSIONS:
+             - Settings → Users & Permissions → Roles → Public
+             - Enable permissions for:
+               * Gallery - find, findOne
+               * Media - find, findOne
+               * Upload - read
+
+          3. TEST API ENDPOINT:
+             ${API_URL}?populate[image][populate]=*&populate[thumbnail][populate]=*
+        `);
       }
+
+      setImages(processedImages);
+      setFilteredImages(processedImages);
     } catch (err) {
-      setError(err.message || 'Failed to load gallery');
+      console.error('Gallery loading failed:', err);
+      setError(err.response?.data?.error?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -102,142 +452,157 @@ const Gallery = () => {
     fetchImages();
   }, []);
 
-  // Get unique categories
-  const categories = ['all', ...new Set(images.map(img => img.category))];
+  useEffect(() => {
+    if (activeFilter === 'all') {
+      setFilteredImages(images);
+    } else {
+      setFilteredImages(images.filter(img => img.category === activeFilter));
+    }
+  }, [activeFilter, images]);
 
-  // Filter images
-  const filteredImages = activeFilter === 'all' 
-    ? images 
-    : images.filter(img => img.category === activeFilter);
-
-  // Lightbox navigation
-  const openLightbox = (index) => {
-    setLightboxIndex(index);
-    setIsOpen(true);
+  const getUniqueCategories = () => {
+    const categories = ['all', ...new Set(images.map(img => img.category))];
+    return categories;
   };
 
-  const closeLightbox = () => {
-    setIsOpen(false);
+  // Prepare slides for lightbox
+  const prepareSlides = () => {
+    return filteredImages.map(image => ({
+      src: image.imageUrl,
+      alt: image.title,
+      title: image.title,
+      description: image.description || ''
+    }));
   };
 
   if (loading) {
     return (
-      <GalleryContainer className="text-center">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Loading gallery...</p>
+      <GalleryContainer>
+        <LoadingContainer>
+          <Spinner animation="border" />
+          <p>Loading gallery...</p>
+        </LoadingContainer>
       </GalleryContainer>
     );
   }
 
-  if (error || images.length === 0) {
+  if (error) {
     return (
-      <GalleryContainer className="text-center">
-        <EmptyStateContainer>
-          <FiImage size={48} className="mb-3" color="#6c757d" />
-          <h3>No Images Found in Gallery</h3>
-          <p className="text-muted mb-4">
-            The gallery is currently empty or no images have been uploaded.
-          </p>
-          
-          <AdminGuide>
-            <h5><FiUpload className="me-2" />Admin Instructions</h5>
-            <ol className="text-start">
-              <li>Log in to your Strapi admin panel</li>
-              <li>Navigate to the Gallery collection type</li>
-              <li>Create new gallery items or edit existing ones</li>
-              <li>Upload images to each gallery item</li>
-              <li>Ensure images are properly saved and published</li>
-            </ol>
-            
+      <GalleryContainer>
+        <ErrorContainer>
+          <h4>Gallery Loading Error</h4>
+          <pre>
+            {error}
+          </pre>
+          <div className="mt-3 d-flex gap-2">
             <Button 
               variant="primary" 
               onClick={fetchImages}
-              className="mt-3"
             >
-              <FiRefreshCw className="me-2" />
-              Check Again
+              <FiRefreshCw className="me-1" /> Try Again
             </Button>
-          </AdminGuide>
-        </EmptyStateContainer>
+            <Button 
+              variant="outline-secondary" 
+              href={`${API_URL}?populate[image][populate]=*&populate[thumbnail][populate]=*`} 
+              target="_blank"
+            >
+              <FiExternalLink className="me-1" /> Test API Endpoint
+            </Button>
+          </div>
+        </ErrorContainer>
       </GalleryContainer>
     );
   }
 
   return (
     <GalleryContainer>
-      <h2 className="text-center mb-5">Gallery</h2>
+      <GalleryHeader>
+        <h2>Our Gallery</h2>
+        <p>Explore our collection of images showcasing the beauty and diversity of African diamonds</p>
+      </GalleryHeader>
       
-      {/* Filter Controls */}
-      <div className="text-center mb-4">
-        {categories.map(category => (
-          <Button
+      <FilterContainer>
+        {getUniqueCategories().map(category => (
+          <FilterButton
             key={category}
-            variant={activeFilter === category ? 'primary' : 'light'}
+            active={activeFilter === category}
             onClick={() => setActiveFilter(category)}
-            className="m-1"
           >
-            {category === 'all' ? <FiFilter className="me-2" /> : null}
-            {category}
-            {activeFilter === category && category !== 'all' ? (
-              <FiX 
-                className="ms-2" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveFilter('all');
-                }} 
-              />
-            ) : null}
-          </Button>
+            {category === 'all' ? 'All Images' : category.charAt(0).toUpperCase() + category.slice(1)}
+          </FilterButton>
         ))}
-      </div>
-
-      {/* Gallery Grid */}
-      <Row>
+      </FilterContainer>
+      
+      <GalleryGrid>
         {filteredImages.map((image, index) => (
-          <Col key={image.id} xs={12} sm={6} md={4} lg={3} className="mb-4">
-            <div 
-              className="position-relative rounded overflow-hidden shadow-sm hover-shadow-lg transition-all"
-              style={{ cursor: 'pointer', height: '100%' }}
-              onClick={() => openLightbox(index)}
+          <GalleryItem key={image.id} index={index}>
+            <ImageCard
+              onClick={() => {
+                setLightboxIndex(index);
+                setIsOpen(true);
+              }}
             >
-              <div className="ratio ratio-1x1 bg-light">
+              <ImageContainer>
                 <img
                   src={image.thumbnailUrl}
                   alt={image.title}
-                  className="img-cover"
                   loading="lazy"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = '/placeholder-image.jpg';
+                    e.target.src = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iI2Y4ZjlmYSIvPjxwYXRoIGQ9Ik0yNTYgOEMxMTkgOCA4IDExOSA4IDI1NnMxMTEgMjQ4IDI0OCAyNDggMjQ4LTExMSAyNDgtMjQ4UzM5MyA4IDI1NiA4em0wIDQ0OGMtMTEwLjUgMC0yMDAtODkuNS0yMDAtMjAwUzE0NS41IDU2IDI1NiA1NnMyMDAgODkuNSAyMDAgMjAwLTg5LjUgMjAwLTIwMCAyMDB6bTMyLjItMTQzLjJoLTE2Ljd2LTE2LjdoMTYuN3YxNi43em0wLTY2LjdoLTE2Ljd2LTgzLjNoMTYuN3Y4My4zeiIgZmlsbD0iI2RkZGRkZCIvPjwvc3ZnPg==`;
                   }}
                 />
-                <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 opacity-0 hover-opacity-100 transition-opacity">
-                  <FiZoomIn size={24} color="white" />
+                <ImageOverlay className="image-overlay">
+                  <div className="zoom-icon">
+                    <FiZoomIn size={24} />
+                  </div>
+                </ImageOverlay>
+              </ImageContainer>
+              <ImageInfo>
+                <h6>{image.title}</h6>
+                {image.category && (
+                  <StyledBadge>
+                    {image.category}
+                  </StyledBadge>
+                )}
+              </ImageInfo>
+            </ImageCard>
+          </GalleryItem>
+        ))}
+      </GalleryGrid>
+
+      <Modal
+        show={isOpen}
+        onHide={() => setIsOpen(false)}
+        size="lg"
+        centered
+        className="gallery-modal"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{filteredImages[lightboxIndex]?.title || 'Image'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-0">
+          {filteredImages[lightboxIndex] && (
+            <div className="text-center">
+              <img 
+                src={filteredImages[lightboxIndex].imageUrl} 
+                alt={filteredImages[lightboxIndex].title}
+                style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }}
+              />
+              {filteredImages[lightboxIndex].description && (
+                <div className="p-3">
+                  <p>{filteredImages[lightboxIndex].description}</p>
                 </div>
-              </div>
-              {image.category && (
-                <span className="position-absolute top-0 end-0 m-2 badge bg-dark">
-                  {image.category}
-                </span>
               )}
             </div>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Lightbox */}
-      {isOpen && (
-        <Lightbox
-          mainSrc={filteredImages[lightboxIndex].imageUrl}
-          nextSrc={filteredImages[(lightboxIndex + 1) % filteredImages.length]?.imageUrl}
-          prevSrc={filteredImages[(lightboxIndex + filteredImages.length - 1) % filteredImages.length]?.imageUrl}
-          onCloseRequest={closeLightbox}
-          onMovePrevRequest={() => setLightboxIndex((lightboxIndex + filteredImages.length - 1) % filteredImages.length)}
-          onMoveNextRequest={() => setLightboxIndex((lightboxIndex + 1) % filteredImages.length)}
-          imageTitle={filteredImages[lightboxIndex].title}
-          imageCaption={filteredImages[lightboxIndex].description}
-        />
-      )}
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setIsOpen(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </GalleryContainer>
   );
 };

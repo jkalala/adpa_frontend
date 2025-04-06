@@ -1,0 +1,120 @@
+/* Modern Theme Variables */
+:root {
+  --primary-color: #4361ee;
+  --primary-light: #eef2ff;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --dark-bg: #1e293b;
+  --dark-text: #f8fafc;
+  --light-bg: #f8fafc;
+  --light-text: #1e293b;
+  --header-height: 60px;
+  --footer-height: 50px;
+}
+
+/* Dark Mode */
+.dark-mode {
+  background-color: var(--dark-bg);
+  color: var(--dark-text);
+}
+
+/* Modern Header */
+.modern-header {
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 0.5rem 1rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+
+.dark .modern-header {
+  background: var(--dark-bg);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* Sidebar */
+.modern-sidebar {
+  width: 250px;
+  background: white;
+  transition: all 0.3s ease;
+  position: fixed;
+  top: var(--header-height);
+  bottom: var(--footer-height);
+  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.modern-sidebar.collapsed {
+  width: 70px;
+}
+
+/* Main Content */
+.main-content {
+  margin-top: var(--header-height);
+  margin-bottom: var(--footer-height);
+  min-height: calc(100vh - var(--header-height) - var(--footer-height));
+}
+
+/* Footer */
+.modern-footer {
+  background: white;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  padding: 0.5rem 1rem;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--footer-height);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+
+.dark .modern-footer {
+  background: var(--dark-bg);
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+}
+
+/* Metric Cards */
+.metric-card {
+  border: none;
+  border-radius: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Interactive Table */
+.interactive-table tr {
+  transition: background-color 0.2s ease;
+}
+
+.interactive-table tr:hover {
+  background-color: rgba(0,0,0,0.02);
+}
+
+/* Animations */
+.hover-effect {
+  transition: all 0.3s ease;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+  .modern-sidebar {
+      transform: translateX(-100%);
+  }
+  
+  .modern-sidebar.collapsed {
+      transform: translateX(0);
+      width: 70px;
+  }
+}
